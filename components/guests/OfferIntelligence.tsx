@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Sparkles,
   Target,
@@ -78,6 +78,8 @@ interface Campaign {
   revenueImpact: string;
   performance: string;
   dateCreated: string;
+  description?: string;
+  propertyCount?: number;
 }
 
 const MOCK_RECOMMENDATIONS: Recommendation[] = [
@@ -186,11 +188,11 @@ const MOCK_RECOMMENDATIONS: Recommendation[] = [
 ];
 
 const INITIAL_CAMPAIGNS: Campaign[] = [
-  { id: 'c1', name: 'Safari Adventure Summer', image: 'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&q=80&w=800', hotel: 'Jetwing Yala', offerType: 'Package', audience: 'German Market', status: 'Active', revenueImpact: 'LKR 4.2M', performance: '18.4%', dateCreated: '15-May-2026' },
-  { id: 'c2', name: 'Ayurveda Autumn', image: 'https://images.unsplash.com/photo-1544161515-4af6b1d4640b?auto=format&fit=crop&q=80&w=800', hotel: 'Jetwing Blue', offerType: 'Wellness', audience: 'Repeat Guests', status: 'Scheduled', revenueImpact: 'LKR 1.5M', performance: '12.1%', dateCreated: '10-May-2026' },
-  { id: 'c3', name: 'Family Festive Break', image: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&q=80&w=800', hotel: 'Jetwing St. Andrew’s', offerType: 'Family', audience: 'Indian Markets', status: 'Draft', revenueImpact: 'LKR 3.5M', performance: '-', dateCreated: '20-May-2026' },
-  { id: 'c4', name: 'Elite Coastal Stay', image: 'https://images.unsplash.com/photo-1540553016722-983e48a2cd10?auto=format&fit=crop&q=80&w=800', hotel: 'Jetwing Lighthouse', offerType: 'Luxury', audience: 'UK Market', status: 'Completed', revenueImpact: 'LKR 2.9M', performance: '21.5%', dateCreated: '01-May-2026' },
-  { id: 'c5', name: 'Whale Watching Galle', image: 'https://images.unsplash.com/photo-1568430462989-44163eb1752f?auto=format&fit=crop&q=80&w=800', hotel: 'Jetwing Lighthouse', offerType: 'Excursion', audience: 'UK Market', status: 'Active', revenueImpact: 'LKR 1.2M', performance: '15.2%', dateCreated: '05-Jun-2026' },
+  { id: 'c1', name: 'Safari Adventure Summer', image: 'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&q=80&w=800', hotel: 'Jetwing Yala', offerType: 'Package', audience: 'German Market', status: 'Active', revenueImpact: 'LKR 4.2M', performance: '18.4%', dateCreated: '15-May-2026', description: 'Summer safari package with tented luxury stays and private guides.', propertyCount: 2 },
+  { id: 'c2', name: 'Ayurveda Autumn', image: 'https://images.unsplash.com/photo-1544161515-4af6b1d4640b?auto=format&fit=crop&q=80&w=800', hotel: 'Jetwing Blue', offerType: 'Wellness', audience: 'Repeat Guests', status: 'Scheduled', revenueImpact: 'LKR 1.5M', performance: '12.1%', dateCreated: '10-May-2026', description: '7-day Ayurveda retreat focused on detox and rejuvenation.', propertyCount: 1 },
+  { id: 'c3', name: 'Family Festive Break', image: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&q=80&w=800', hotel: 'Jetwing St. Andrew’s', offerType: 'Family', audience: 'Indian Markets', status: 'Draft', revenueImpact: 'LKR 3.5M', performance: '-', dateCreated: '20-May-2026', description: 'Family package with kids activities and complimentary meals.', propertyCount: 1 },
+  { id: 'c4', name: 'Elite Coastal Stay', image: 'https://images.unsplash.com/photo-1540553016722-983e48a2cd10?auto=format&fit=crop&q=80&w=800', hotel: 'Jetwing Lighthouse', offerType: 'Luxury', audience: 'UK Market', status: 'Completed', revenueImpact: 'LKR 2.9M', performance: '21.5%', dateCreated: '01-May-2026', description: 'Luxury coastal villa experiences with private dining.', propertyCount: 3 },
+  { id: 'c5', name: 'Whale Watching Galle', image: 'https://images.unsplash.com/photo-1568430462989-44163eb1752f?auto=format&fit=crop&q=80&w=800', hotel: 'Jetwing Lighthouse', offerType: 'Excursion', audience: 'UK Market', status: 'Active', revenueImpact: 'LKR 1.2M', performance: '15.2%', dateCreated: '05-Jun-2026', description: 'Coastal whale-watching excursions with gourmet breakfast.', propertyCount: 0 },
   { id: 'rec1-c', name: 'Safari Adventure Package', image: 'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&q=80&w=800', hotel: 'Jetwing Yala', offerType: 'Package', audience: 'German Guests', status: 'AI Recommended', revenueImpact: 'LKR 4.2M', performance: '-', dateCreated: '01-Jul-2026' },
   { id: 'rec2-c', name: 'Wellness Retreat Package', image: 'https://images.unsplash.com/photo-1544161515-4af6b1d4640b?auto=format&fit=crop&q=80&w=800', hotel: 'Jetwing Vil Uyana', offerType: 'Wellness', audience: 'Repeat Guests', status: 'AI Recommended', revenueImpact: 'LKR 2.8M', performance: '-', dateCreated: '01-Jul-2026' },
   { id: 'rec3-c', name: 'Family Escape Bundle', image: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&q=80&w=800', hotel: 'Jetwing St. Andrew’s', offerType: 'Family', audience: 'Indian Markets', status: 'AI Recommended', revenueImpact: 'LKR 3.5M', performance: '-', dateCreated: '01-Jul-2026' },
@@ -201,6 +203,7 @@ const INITIAL_CAMPAIGNS: Campaign[] = [
 
 export default function OfferIntelligence() {
   const [currentStep, setCurrentStep] = useState<Step>(0);
+  const [showAIModal, setShowAIModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [campaigns, setCampaigns] = useState<Campaign[]>(INITIAL_CAMPAIGNS);
   const [selectedOffer, setSelectedOffer] = useState<Recommendation | null>(null);
@@ -208,11 +211,13 @@ export default function OfferIntelligence() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Status');
-  const [typeFilter, setTypeFilter] = useState('All Types');
-  const [dateRange, setDateRange] = useState('All Time');
+  const [typeFilter, setTypeFilter] = useState('Offer Type');
+  const [dateRange, setDateRange] = useState('Date Range');
   const [showFilters, setShowFilters] = useState(false);
   const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
   const [showCampaignDetails, setShowCampaignDetails] = useState<Campaign | null>(null);
+  const [page, setPage] = useState(1);
+  const perPage = 5;
 
   // Wizard State
   const [businessGoal, setBusinessGoal] = useState('Increase occupancy at Jetwing Yala during August.');
@@ -232,17 +237,18 @@ export default function OfferIntelligence() {
     }));
   }, []);
 
+  // Fixed filtering logical triggers
   const filteredCampaigns = useMemo(() => {
     return campaigns.filter(c => {
       const searchLower = searchQuery.toLowerCase().trim();
       const matchesSearch = searchLower === '' ||
-                           c.name.toLowerCase().includes(searchLower) ||
-                           c.hotel.toLowerCase().includes(searchLower) ||
-                           c.audience.toLowerCase().includes(searchLower) ||
-                           c.offerType.toLowerCase().includes(searchLower);
+                            c.name.toLowerCase().includes(searchLower) ||
+                            c.hotel.toLowerCase().includes(searchLower) ||
+                            c.audience.toLowerCase().includes(searchLower) ||
+                            c.offerType.toLowerCase().includes(searchLower);
 
       const matchesStatus = statusFilter === 'All Status' || c.status === statusFilter;
-      const matchesType = typeFilter === 'Offer Type' || c.offerType === typeFilter;
+      const matchesType = typeFilter === 'Offer Type' || typeFilter === 'All Types' || c.offerType === typeFilter;
 
       const matchesTab = activeDashboardTab === 'All Campaigns' ||
                         (activeDashboardTab === 'Drafts' && c.status === 'Draft') ||
@@ -255,6 +261,10 @@ export default function OfferIntelligence() {
     });
   }, [campaigns, searchQuery, statusFilter, typeFilter, activeDashboardTab]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, statusFilter, typeFilter, activeDashboardTab, dateRange]);
+
   const handleGenerateRecommendations = () => {
     setIsGenerating(true);
     setTimeout(() => {
@@ -262,6 +272,82 @@ export default function OfferIntelligence() {
       setCurrentStep(2);
     }, 1500);
   };
+
+  const AISection = () => (
+    <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-white ring-1 ring-slate-100">
+       <div className="h-1.5" style={{ background: COLORS.goldGradient }} />
+       <CardContent className="p-8 md:p-12">
+          <div className="flex flex-col lg:flex-row gap-12">
+            <div className="flex-1 space-y-6">
+              <div>
+                <h2 className="text-3xl font-serif font-bold text-slate-900">Generate AI Recommendations</h2>
+                <p className="mt-2 text-slate-500">Generate personalized offers using guest behavior, booking history, hotel performance, seasonality and market trends.</p>
+              </div>
+
+              <div className="space-y-4">
+                <label className="text-sm font-bold uppercase tracking-[0.2em] text-slate-400">Business Goal</label>
+                <textarea
+                  value={businessGoal}
+                  onChange={(e) => setBusinessGoal(e.target.value)}
+                  placeholder="e.g., Increase occupancy at Jetwing Yala during August."
+                  className="w-full p-5 rounded-2xl border-slate-200 focus:border-amber-400 focus:ring-4 focus:ring-amber-50 outline-none transition-all min-h-[100px] text-lg font-light bg-slate-50/50"
+                  style={{ border: '1px solid #E2E8F0' }}
+                />
+              </div>
+
+              <div className="space-y-4">
+                <label className="text-sm font-bold uppercase tracking-[0.2em] text-slate-400">Additional Instructions</label>
+                <textarea
+                  value={additionalContext}
+                  onChange={(e) => setAdditionalContext(e.target.value)}
+                  placeholder="e.g., Focus on German guests. Avoid high discount campaigns."
+                  className="w-full p-5 rounded-2xl border-slate-200 focus:border-amber-400 focus:ring-4 focus:ring-amber-50 outline-none transition-all min-h-[100px] text-lg font-light bg-slate-50/50"
+                  style={{ border: '1px solid #E2E8F0' }}
+                />
+              </div>
+
+              <button
+                onClick={handleGenerateRecommendations}
+                disabled={isGenerating}
+                className="w-full lg:w-auto px-12 py-5 rounded-2xl text-white text-lg font-bold flex items-center justify-center gap-3 shadow-xl hover:shadow-2xl transition-all disabled:opacity-50"
+                style={{ background: COLORS.goldGradient }}
+              >
+                {isGenerating ? <RefreshCcw className="w-6 h-6 animate-spin" /> : <Sparkles className="w-6 h-6" />}
+                Generate Recommendations
+              </button>
+            </div>
+
+            <div className="lg:w-1/3 bg-slate-50 rounded-[2rem] p-8 flex flex-col justify-center border border-slate-100">
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-700">AI-analyzed guest segments</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-700">Predictive occupancy modelling</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-700">Real-time market trend parity</p>
+                </div>
+                <div className="pt-6 border-t border-slate-200">
+                   <p className="text-xs text-slate-400 leading-relaxed italic">
+                     "AI is helping marketing managers discover profitable offers before creating campaigns."
+                   </p>
+                </div>
+              </div>
+            </div>
+          </div>
+       </CardContent>
+    </Card>
+  );
 
   const handleFinishCampaign = (status: 'Active' | 'Draft') => {
     if (selectedOffer) {
@@ -283,7 +369,11 @@ export default function OfferIntelligence() {
     setSelectedOffer(null);
   };
 
-  const renderDashboard = () => (
+  const renderDashboard = () => {
+    const totalPages = Math.max(1, Math.ceil(filteredCampaigns.length / perPage));
+    const paginatedCampaigns = filteredCampaigns.slice((page - 1) * perPage, page * perPage);
+    
+    return (
     <div className="space-y-12 animate-in fade-in duration-700 pb-20 font-sans">
       <div className="flex justify-between items-center">
         <div>
@@ -291,10 +381,7 @@ export default function OfferIntelligence() {
           <p className="mt-2 text-lg font-light text-slate-500">AI-Powered Offer Recommendations & Campaign Management</p>
         </div>
         <button
-          onClick={() => {
-            const el = document.getElementById('ai-section');
-            el?.scrollIntoView({ behavior: 'smooth' });
-          }}
+          onClick={() => setShowAIModal(true)}
           className="px-8 py-4 rounded-full text-white font-semibold shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
           style={{ background: COLORS.goldGradient }}
         >
@@ -325,92 +412,31 @@ export default function OfferIntelligence() {
         ))}
       </div>
 
-      {/* AI Recommendation Section - PRIMARY FOCUS */}
-      <section id="ai-section" className="scroll-mt-10">
-        <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-white ring-1 ring-slate-100">
-           <div className="h-1.5" style={{ background: COLORS.goldGradient }} />
-           <CardContent className="p-8 md:p-12">
-              <div className="flex flex-col lg:flex-row gap-12">
-                <div className="flex-1 space-y-6">
-                  <div>
-                    <h2 className="text-3xl font-serif font-bold text-slate-900">Generate AI Recommendations</h2>
-                    <p className="mt-2 text-slate-500">Generate personalized offers using guest behavior, booking history, hotel performance, seasonality and market trends.</p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <label className="text-sm font-bold uppercase tracking-[0.2em] text-slate-400">Business Goal</label>
-                    <textarea
-                      value={businessGoal}
-                      onChange={(e) => setBusinessGoal(e.target.value)}
-                      placeholder="e.g., Increase occupancy at Jetwing Yala during August."
-                      className="w-full p-5 rounded-2xl border-slate-200 focus:border-amber-400 focus:ring-4 focus:ring-amber-50 outline-none transition-all min-h-[100px] text-lg font-light bg-slate-50/50"
-                      style={{ border: '1px solid #E2E8F0' }}
-                    />
-                  </div>
-
-                  <div className="space-y-4">
-                    <label className="text-sm font-bold uppercase tracking-[0.2em] text-slate-400">Additional Instructions</label>
-                    <textarea
-                      value={additionalContext}
-                      onChange={(e) => setAdditionalContext(e.target.value)}
-                      placeholder="e.g., Focus on German guests. Avoid high discount campaigns."
-                      className="w-full p-5 rounded-2xl border-slate-200 focus:border-amber-400 focus:ring-4 focus:ring-amber-50 outline-none transition-all min-h-[100px] text-lg font-light bg-slate-50/50"
-                      style={{ border: '1px solid #E2E8F0' }}
-                    />
-                  </div>
-
-                  <Button
-                    onClick={handleGenerateRecommendations}
-                    disabled={isGenerating}
-                    className="w-full lg:w-auto px-12 py-7 rounded-2xl text-lg font-bold flex gap-3 shadow-xl hover:shadow-2xl transition-all"
-                    style={{ background: COLORS.goldGradient }}
-                  >
-                    {isGenerating ? <RefreshCcw className="w-6 h-6 animate-spin" /> : <Sparkles className="w-6 h-6" />}
-                    Generate Recommendations
-                  </Button>
-                </div>
-
-                <div className="lg:w-1/3 bg-slate-50 rounded-[2rem] p-8 flex flex-col justify-center border border-slate-100">
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700">
-                        <CheckCircle2 className="w-5 h-5" />
-                      </div>
-                      <p className="text-sm font-medium text-slate-700">AI-analyzed guest segments</p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700">
-                        <CheckCircle2 className="w-5 h-5" />
-                      </div>
-                      <p className="text-sm font-medium text-slate-700">Predictive occupancy modelling</p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700">
-                        <CheckCircle2 className="w-5 h-5" />
-                      </div>
-                      <p className="text-sm font-medium text-slate-700">Real-time market trend parity</p>
-                    </div>
-                    <div className="pt-6 border-t border-slate-200">
-                       <p className="text-xs text-slate-400 leading-relaxed italic">
-                         "AI is helping marketing managers discover profitable offers before creating campaigns."
-                       </p>
-                    </div>
-                  </div>
-                </div>
+      {showAIModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/40" onClick={() => setShowAIModal(false)} />
+          <div className="relative w-full max-w-6xl mx-6 lg:mx-auto">
+            <div className="bg-white rounded-2xl shadow-2xl overflow-auto max-h-[92vh]">
+              <div className="p-4 flex justify-end">
+                <Button variant="ghost" onClick={() => setShowAIModal(false)}><X className="w-5 h-5" /></Button>
               </div>
-           </CardContent>
-        </Card>
-      </section>
+              <div className="p-8 lg:p-10">
+                <AISection />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <h2 className="text-3xl font-serif font-bold">Campaign Management</h2>
-          <div className="flex bg-slate-50 p-1.5 rounded-2xl ring-1 ring-slate-100">
+          <div className="flex bg-slate-50 p-1.5 rounded-2xl ring-1 ring-slate-100 overflow-x-auto">
              {['All Campaigns', 'AI Recommendations', 'Drafts', 'Scheduled', 'Active', 'Completed'].map(tab => (
                <button
                 key={tab}
                 onClick={() => setActiveDashboardTab(tab)}
-                className={cn("px-5 py-2.5 rounded-xl text-xs font-bold transition-all", activeDashboardTab === tab ? "bg-white shadow-md text-slate-900" : "text-slate-500 hover:text-slate-700")}
+                className={cn("px-5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap", activeDashboardTab === tab ? "bg-white shadow-md text-slate-900" : "text-slate-500 hover:text-slate-700")}
                >
                  {tab}
                </button>
@@ -438,10 +464,10 @@ export default function OfferIntelligence() {
                 onChange={(e) => setDateRange(e.target.value)}
                 className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-8 text-xs font-medium focus:ring-2 focus:ring-amber-200 outline-none appearance-none transition-all"
               >
-                <option>Date Range</option>
-                <option>Last 7 Days</option>
-                <option>Last 30 Days</option>
-                <option>Next 30 Days</option>
+                <option value="Date Range">Date Range</option>
+                <option value="Last 7 Days">Last 7 Days</option>
+                <option value="Last 30 Days">Last 30 Days</option>
+                <option value="Next 30 Days">Next 30 Days</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             </div>
@@ -452,13 +478,13 @@ export default function OfferIntelligence() {
                 onChange={(e) => setTypeFilter(e.target.value)}
                 className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-8 text-xs font-medium focus:ring-2 focus:ring-amber-200 outline-none appearance-none transition-all"
               >
-                <option>Offer Type</option>
-                <option>Package</option>
-                <option>Wellness</option>
-                <option>Family</option>
-                <option>Excursion</option>
-                <option>Luxury</option>
-                <option>Cultural</option>
+                <option value="Offer Type">Offer Type</option>
+                <option value="Package">Package</option>
+                <option value="Wellness">Wellness</option>
+                <option value="Family">Family</option>
+                <option value="Excursion">Excursion</option>
+                <option value="Luxury">Luxury</option>
+                <option value="Cultural">Cultural</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             </div>
@@ -469,23 +495,15 @@ export default function OfferIntelligence() {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-8 text-xs font-medium focus:ring-2 focus:ring-amber-200 outline-none appearance-none transition-all"
               >
-                <option>All Status</option>
-                <option>Active</option>
-                <option>Scheduled</option>
-                <option>Draft</option>
-                <option>Completed</option>
-                <option>AI Recommended</option>
+                <option value="All Status">All Status</option>
+                <option value="Active">Active</option>
+                <option value="Scheduled">Scheduled</option>
+                <option value="Draft">Draft</option>
+                <option value="Completed">Completed</option>
+                <option value="AI Recommended">AI Recommended</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             </div>
-            <Button
-              variant="outline"
-              className="rounded-xl p-2.5 border-slate-100 hover:bg-slate-50 h-[38px] flex items-center gap-2 text-xs font-bold"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <Filter className="w-4 h-4 text-slate-600" />
-              Filters
-            </Button>
           </div>
         </div>
 
@@ -496,7 +514,7 @@ export default function OfferIntelligence() {
                 <thead>
                   <tr className="bg-slate-50/80 border-b border-slate-100">
                     <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-slate-500">Campaign Details</th>
-                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-slate-500">Property</th>
+                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-slate-500">Count</th>
                     <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-slate-500">Offer Type</th>
                     <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-slate-500">Status</th>
                     <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-slate-500">Financial Impact</th>
@@ -504,541 +522,110 @@ export default function OfferIntelligence() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {filteredCampaigns.map(c => (
-                    <tr key={c.id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-4">
-                          <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 shadow-md border border-slate-100 bg-slate-200">
-                             <img src={c.image} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                          </div>
-                          <div className="space-y-0.5">
-                            <p className="font-bold text-slate-900 text-[15px] group-hover:text-amber-800 transition-colors">{c.name}</p>
-                            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-tight">{c.audience}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-2">
-                           <Briefcase className="w-4 h-4 text-slate-300" />
-                           <span className="text-sm text-slate-600 font-semibold">{c.hotel}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                         <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wide">
-                           {c.offerType}
-                         </span>
-                      </td>
-                      <td className="px-6 py-5">
-                        <span className={cn(
-                          "px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1.5",
-                          c.status === 'Active' ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100" :
-                          c.status === 'Scheduled' ? "bg-sky-50 text-sky-700 ring-1 ring-sky-100" :
-                          c.status === 'Draft' ? "bg-slate-100 text-slate-600 ring-1 ring-slate-200" :
-                          c.status === 'AI Recommended' ? "bg-amber-50 text-amber-700 ring-1 ring-amber-100" :
-                          "bg-slate-50 text-slate-400 ring-1 ring-slate-100"
-                        )}>
-                          <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse",
-                            c.status === 'Active' ? "bg-emerald-500" :
-                            c.status === 'Scheduled' ? "bg-sky-500" :
-                            c.status === 'AI Recommended' ? "bg-amber-500" : "bg-slate-400"
-                          )} />
-                          {c.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="space-y-0.5">
-                          <p className="text-[15px] font-bold text-slate-900">{c.revenueImpact}</p>
-                          <p className="text-[10px] text-emerald-600 font-bold uppercase">{c.performance} ROI</p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5 text-right">
-                        <div className="flex items-center justify-end gap-3 relative">
-                          <button
-                            onClick={() => {
-                              if (c.status === 'AI Recommended') {
-                                const recId = c.id.replace('-c', '');
-                                const rec = MOCK_RECOMMENDATIONS.find(r => r.id === recId);
-                                if (rec) {
-                                  setSelectedOffer(rec);
-                                  setCurrentStep(3);
-                                }
-                              } else {
-                                setShowCampaignDetails(c);
-                              }
-                            }}
-                            className="p-2.5 hover:bg-white rounded-xl text-slate-400 hover:text-amber-600 hover:shadow-md transition-all border border-transparent hover:border-slate-100"
-                          >
-                            <Eye className="w-4.5 h-4.5" />
-                          </button>
-                          <div className="relative">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setOpenActionMenuId(openActionMenuId === c.id ? null : c.id);
-                              }}
-                              className={cn(
-                                "p-2.5 hover:bg-white rounded-xl text-slate-400 hover:text-slate-900 hover:shadow-md transition-all border border-transparent hover:border-slate-100",
-                                openActionMenuId === c.id && "bg-white text-slate-900 shadow-md border-slate-100"
-                              )}
-                            >
-                              <MoreVertical className="w-4.5 h-4.5" />
-                            </button>
-
-                            {openActionMenuId === c.id && (
-                              <div className="absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-2xl ring-1 ring-black/5 z-[60] py-3 animate-in fade-in zoom-in-95 duration-200">
-                               {[
-                                 { label: 'Edit Campaign', icon: Briefcase },
-                                 { label: 'Generate Audience', icon: Users },
-                                 { label: 'Generate Email', icon: Mail },
-                                 { label: 'Generate SMS', icon: MessageSquare },
-                                 { label: 'Duplicate Campaign', icon: Copy },
-                                 { label: 'Pause Campaign', icon: Pause },
-                                 { label: 'Delete Campaign', icon: Trash2, danger: true },
-                               ].map((item, i) => (
-                                 <button
-                                  key={i}
-                                  className={cn(
-                                    "w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 transition-colors",
-                                    item.danger ? "text-red-600 hover:bg-red-50" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                                  )}
-                                 >
-                                   <item.icon className="w-4 h-4" />
-                                   {item.label}
-                                 </button>
-                               ))}
+                  {paginatedCampaigns.length > 0 ? (
+                    paginatedCampaigns.map((c) => {
+                      const desc = c.description || (c.id.endsWith('-c') ? MOCK_RECOMMENDATIONS.find(r => r.id === c.id.replace('-c', ''))?.description : '') || c.audience || '-';
+                      return (
+                        <tr key={c.id} className="hover:bg-slate-50/50 transition-colors group">
+                          <td className="px-6 py-5">
+                            <div className="flex items-center gap-4">
+                              <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 shadow-md border border-slate-100 bg-slate-200">
+                                <img src={c.image} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                              </div>
+                              <div className="space-y-0.5">
+                                <p className="font-bold text-slate-900 text-[15px] group-hover:text-amber-800 transition-colors">{c.name}</p>
+                                <p className="text-sm text-slate-500">{desc.length > 100 ? desc.slice(0, 100) + '...' : desc}</p>
+                              </div>
                             </div>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
+                          </td>
+                          <td className="px-6 py-5">
+                            <div className="flex items-center gap-2">
+                              <Briefcase className="w-4 h-4 text-slate-300" />
+                              <span className="text-sm text-slate-600 font-semibold">{c.propertyCount ?? 0}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-5">
+                            <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wide">
+                              {c.offerType}
+                            </span>
+                          </td>
+                          <td className="px-6 py-5">
+                            <span className={cn(
+                              "px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1.5",
+                              c.status === 'Active' ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100" :
+                              c.status === 'Scheduled' ? "bg-sky-50 text-sky-700 ring-1 ring-sky-100" :
+                              c.status === 'Draft' ? "bg-slate-100 text-slate-600 ring-1 ring-slate-200" :
+                              c.status === 'AI Recommended' ? "bg-amber-50 text-amber-700 ring-1 ring-amber-100" :
+                              "bg-slate-50 text-slate-400 ring-1 ring-slate-100"
+                            )}>
+                              <span className={cn("w-1.5 h-1.5 rounded-full",
+                                c.status === 'Active' ? "bg-emerald-500 animate-pulse" :
+                                c.status === 'Scheduled' ? "bg-sky-500" :
+                                c.status === 'AI Recommended' ? "bg-amber-500 animate-pulse" : "bg-slate-400"
+                              )} />
+                              {c.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-5">
+                            <span className="text-sm font-bold text-slate-800">{c.revenueImpact}</span>
+                          </td>
+                          <td className="px-6 py-5 text-right">
+                            <Button variant="ghost" size="sm" className="rounded-full p-2">
+                              <MoreVertical className="w-4 h-4 text-slate-400" />
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-12 text-center text-sm text-slate-400">
+                        No campaigns found matching the current criteria.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="p-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-b-2xl">
+                <p className="text-xs text-slate-500">
+                  Showing <span className="font-semibold text-slate-800">{((page - 1) * perPage) + 1}</span> to <span className="font-semibold text-slate-800">{Math.min(page * perPage, filteredCampaigns.length)}</span> of <span className="font-semibold text-slate-800">{filteredCampaigns.length}</span> campaigns
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page === 1}
+                    onClick={() => setPage(p => p - 1)}
+                    className="text-xs"
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page === totalPages}
+                    onClick={() => setPage(p => p + 1)}
+                    className="text-xs"
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
         </Card>
       </div>
     </div>
-  );
-
-  const renderStepHeader = (title: string, subtitle: string) => (
-    <div className="mb-12 flex justify-between items-start">
-      <div>
-        <h1 className="text-4xl font-serif font-medium" style={{ color: COLORS.text }}>{title}</h1>
-        <p className="mt-2 text-lg font-light text-slate-500">{subtitle}</p>
-      </div>
-      <button onClick={() => setCurrentStep(0)} className="p-3 hover:bg-slate-100 rounded-full transition-all text-slate-400">
-        <X className="w-6 h-6" />
-      </button>
-    </div>
-  );
-
-  // Wizard Steps
-  if (currentStep === 1) { // Step 1: Business Context
-    return (
-      <div className="max-w-4xl mx-auto space-y-12 animate-in slide-in-from-bottom-8 duration-700">
-        {renderStepHeader('Generate Offer Ideas', 'Admin enters business context for AI analysis.')}
-
-        <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-white ring-1 ring-slate-100">
-           <div className="h-1" style={{ background: COLORS.goldGradient }} />
-           <CardContent className="p-12 space-y-10">
-              <div className="space-y-4">
-                 <label className="text-sm font-bold uppercase tracking-[0.2em] text-slate-400">Business Goal</label>
-                 <textarea
-                  value={businessGoal}
-                  onChange={(e) => setBusinessGoal(e.target.value)}
-                  className="w-full p-6 rounded-3xl border-slate-200 focus:border-amber-400 focus:ring-4 focus:ring-amber-50 outline-none transition-all min-h-[150px] text-xl font-light"
-                  style={{ border: '1px solid #E2E8F0' }}
-                 />
-              </div>
-              <div className="space-y-4">
-                 <label className="text-sm font-bold uppercase tracking-[0.2em] text-slate-400">Additional Context</label>
-                 <textarea
-                  value={additionalContext}
-                  onChange={(e) => setAdditionalContext(e.target.value)}
-                  className="w-full p-6 rounded-3xl border-slate-200 focus:border-amber-400 focus:ring-4 focus:ring-amber-50 outline-none transition-all min-h-[150px] text-xl font-light"
-                  style={{ border: '1px solid #E2E8F0' }}
-                 />
-              </div>
-              <Button
-                onClick={handleGenerateRecommendations}
-                disabled={isGenerating}
-                className="w-full py-8 rounded-3xl text-xl font-bold flex gap-3 shadow-xl hover:shadow-2xl transition-all"
-                style={{ background: COLORS.goldGradient }}
-              >
-                {isGenerating ? <RefreshCcw className="w-6 h-6 animate-spin" /> : <Sparkles className="w-6 h-6" />}
-                Generate Recommendations
-              </Button>
-           </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (currentStep === 2) { // Step 2: AI Recommended Offers
-    return (
-      <div className="space-y-12 animate-in fade-in duration-700">
-        {renderStepHeader('AI Recommended Offers', 'Strategic packages discovered for your business goal.')}
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-           {offers.map(rec => (
-             <Card key={rec.id} className="border-none shadow-lg hover:shadow-2xl transition-all rounded-[2rem] overflow-hidden group bg-white ring-1 ring-slate-100">
-               <CardContent className="p-8">
-                  <div className="flex justify-between items-start mb-6">
-                    <h3 className="text-2xl font-serif font-bold group-hover:text-amber-700 transition-colors">{rec.title}</h3>
-                    <div className="text-right">
-                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Confidence</p>
-                       <p className="text-2xl font-black" style={{ color: COLORS.primary }}>{rec.confidence}%</p>
-                    </div>
-                  </div>
-                  <div className="space-y-4 mb-8">
-                     <div className="flex justify-between text-sm"><span className="text-slate-400">Occupancy Impact:</span><span className="font-bold text-green-600">{rec.occupancyImpact}</span></div>
-                     <div className="flex justify-between text-sm"><span className="text-slate-400">Target Market:</span><span className="font-bold">{rec.target}</span></div>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-amber-50/50 border border-amber-100/50 mb-8">
-                     <p className="text-[10px] font-bold uppercase tracking-widest text-amber-800 mb-2">Reason:</p>
-                     <p className="text-xs leading-relaxed text-amber-900">{rec.reason}</p>
-                  </div>
-                  <div className="flex gap-2">
-                     <Button variant="outline" className="flex-1 rounded-xl py-4 border-slate-200" onClick={() => { setSelectedOffer(rec); setCurrentStep(3); }}>👁 View Details</Button>
-                     <Button className="flex-1 rounded-xl py-4" style={{ background: COLORS.secondary }} onClick={() => { setSelectedOffer(rec); setCurrentStep(6); }}>Continue</Button>
-                  </div>
-               </CardContent>
-             </Card>
-           ))}
-        </div>
-
-        <Card className="max-w-2xl mx-auto border-none shadow-xl rounded-[2rem] ring-1 ring-slate-100">
-           <CardHeader className="border-b border-slate-50"><CardTitle className="text-lg">Refine Recommendations</CardTitle></CardHeader>
-           <CardContent className="p-8 space-y-4">
-              <textarea placeholder="[ Show only high-profit offers for Yala. ]" className="w-full p-4 rounded-2xl border-slate-100 outline-none focus:ring-2 focus:ring-amber-200 min-h-[80px]" />
-              <Button variant="outline" className="w-full rounded-xl py-4 border-slate-200 font-bold">Refine Results</Button>
-           </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  const CampaignDetailsModal = () => {
-    if (!showCampaignDetails) return null;
-    return (
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
-        <Card className="w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl rounded-[2.5rem] bg-white border-none relative ring-1 ring-slate-100">
-          <button
-            onClick={() => setShowCampaignDetails(null)}
-            className="absolute top-8 right-8 p-3 hover:bg-slate-100 rounded-full transition-all text-slate-400 hover:text-slate-900 z-10"
-          >
-            <X className="w-6 h-6" />
-          </button>
-
-          <div className="overflow-y-auto max-h-[90vh] p-10 md:p-14">
-            <div className="space-y-12">
-              <div className="flex justify-between items-start">
-                <div>
-                  <span className={cn(
-                    "px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ring-1 mb-4 inline-block",
-                    showCampaignDetails.status === 'Active' ? "bg-green-50 text-green-700 ring-green-100" : "bg-slate-50 text-slate-600 ring-slate-100"
-                  )}>{showCampaignDetails.status} Campaign</span>
-                  <h1 className="text-4xl font-serif font-bold text-slate-900">{showCampaignDetails.name}</h1>
-                  <p className="text-lg text-slate-500 mt-2 font-light">{showCampaignDetails.hotel} • {showCampaignDetails.audience}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                 <div className="p-8 rounded-3xl bg-slate-50 space-y-2">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Revenue Forecast</p>
-                    <p className="text-3xl font-bold text-slate-900">{showCampaignDetails.revenueImpact}</p>
-                 </div>
-                 <div className="p-8 rounded-3xl bg-slate-50 space-y-2">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Current Performance</p>
-                    <p className="text-3xl font-bold text-green-600">{showCampaignDetails.performance}</p>
-                 </div>
-                 <div className="p-8 rounded-3xl bg-slate-50 space-y-2">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Launch Date</p>
-                    <p className="text-3xl font-bold text-slate-900">{showCampaignDetails.dateCreated}</p>
-                 </div>
-              </div>
-
-              <div className="space-y-8">
-                 <section className="space-y-4">
-                    <h3 className="text-xl font-bold">Email Template</h3>
-                    <div className="p-8 rounded-3xl border border-slate-100 bg-white shadow-sm space-y-4">
-                       <p className="text-sm font-bold border-b border-slate-50 pb-4">Subject: {emailTemplate.subject}</p>
-                       <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{emailTemplate.body}</p>
-                    </div>
-                 </section>
-
-                 <section className="space-y-4">
-                    <h3 className="text-xl font-bold">SMS Template</h3>
-                    <div className="p-6 rounded-2xl bg-slate-900 text-white shadow-xl max-w-sm">
-                       <p className="text-sm font-medium leading-relaxed">{smsTemplate}</p>
-                    </div>
-                 </section>
-              </div>
-
-              <div className="pt-8 border-t border-slate-100 flex justify-end gap-4">
-                 <Button variant="outline" className="rounded-xl px-8" onClick={() => setShowCampaignDetails(null)}>Close</Button>
-                 <Button className="rounded-xl px-8" style={{ background: COLORS.secondary }}>Edit Campaign</Button>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
     );
   };
-
-  const ViewDetailsModal = () => {
-    if (!selectedOffer || currentStep !== 3) return null;
-    return (
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
-        <Card className="w-full max-w-5xl max-h-[90vh] overflow-hidden shadow-2xl rounded-[2.5rem] bg-white border-none relative ring-1 ring-slate-100">
-          <div className="absolute top-0 left-0 right-0 h-2" style={{ background: COLORS.goldGradient }} />
-          <button
-            onClick={() => setCurrentStep(offers.some(o => o.id === selectedOffer.id) && currentStep === 3 ? 2 : 0)}
-            className="absolute top-8 right-8 p-3 hover:bg-slate-100 rounded-full transition-all text-slate-400 hover:text-slate-900 z-10"
-          >
-            <X className="w-6 h-6" />
-          </button>
-
-          <div className="overflow-y-auto max-h-[90vh] p-10 md:p-14">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-14">
-              <div className="md:col-span-2 space-y-12">
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="px-4 py-1 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold uppercase tracking-widest ring-1 ring-amber-100">AI Recommendation</span>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Confidence Score: {selectedOffer.confidence}%</span>
-                  </div>
-                  <h1 className="text-5xl font-serif font-bold text-slate-900 leading-tight">{selectedOffer.title}</h1>
-                </div>
-
-                <section className="space-y-4">
-                   <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 block">Offer Description</label>
-                   <p className="text-2xl font-light text-slate-600 leading-relaxed">{selectedOffer.description}</p>
-                </section>
-
-                <div className="grid grid-cols-2 gap-10">
-                   <section className="space-y-4">
-                      <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 block">Recommended Hotels</label>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedOffer.hotels.map(h => (
-                          <span key={h} className="px-4 py-2 bg-slate-50 rounded-xl text-sm font-bold text-slate-700 ring-1 ring-slate-100">{h}</span>
-                        ))}
-                      </div>
-                   </section>
-                   <section className="space-y-4">
-                      <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 block">Target Audience</label>
-                      <p className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                        <Users className="w-5 h-5 text-amber-600" /> {selectedOffer.target}
-                      </p>
-                   </section>
-                </div>
-
-                <section className="space-y-4">
-                   <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 block">AI Strategic Reasoning</label>
-                   <div className="p-8 rounded-3xl bg-slate-50 border border-slate-100 italic text-slate-600 leading-relaxed text-lg shadow-inner">
-                      &quot;{selectedOffer.reasoningExtended}&quot;
-                   </div>
-                </section>
-
-                <section className="space-y-6">
-                   <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 block">Financial Analysis & Risk</label>
-                   <div className="grid grid-cols-2 gap-6">
-                      <div className="p-6 rounded-2xl border border-slate-100 space-y-2">
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Analysis</p>
-                        <p className="text-sm text-slate-600 leading-relaxed">{selectedOffer.financialAnalysis}</p>
-                      </div>
-                      <div className="p-6 rounded-2xl border border-slate-100 space-y-2">
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Historical Context</p>
-                        <p className="text-sm text-slate-600 leading-relaxed">{selectedOffer.historicalResults}</p>
-                      </div>
-                   </div>
-                </section>
-              </div>
-
-              <div className="space-y-8">
-                <Card className="border-none shadow-2xl rounded-[3rem] bg-slate-900 text-white overflow-hidden p-1">
-                   <div className="p-10 space-y-10">
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Expected Revenue</p>
-                        <p className="text-4xl font-serif font-bold text-amber-400">{selectedOffer.revenueImpact}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Occupancy Impact</p>
-                        <p className="text-4xl font-serif font-bold text-amber-400">{selectedOffer.occupancyImpact}</p>
-                      </div>
-                      <div className="pt-8 border-t border-slate-800 flex justify-between items-center">
-                        <span className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Risk Level</span>
-                        <span className={cn(
-                          "px-4 py-1 rounded-full text-xs font-bold ring-1",
-                          selectedOffer.riskLevel === 'Low' ? "text-green-400 ring-green-900/50 bg-green-900/20" : "text-amber-400 ring-amber-900/50 bg-amber-900/20"
-                        )}>{selectedOffer.riskLevel}</span>
-                      </div>
-                   </div>
-                </Card>
-
-                <div className="space-y-4 pt-6">
-                   <Button
-                    className="w-full py-7 rounded-2xl text-lg font-bold shadow-xl hover:scale-[1.02] transition-all"
-                    style={{ background: COLORS.goldGradient }}
-                    onClick={() => setCurrentStep(6)}
-                   >
-                     Generate Audience
-                   </Button>
-                   <div className="grid grid-cols-2 gap-3">
-                      <Button variant="outline" className="rounded-xl py-4 border-slate-200 font-bold text-xs" onClick={() => setCurrentStep(7)}>Generate Email</Button>
-                      <Button variant="outline" className="rounded-xl py-4 border-slate-200 font-bold text-xs" onClick={() => setCurrentStep(8)}>Generate SMS</Button>
-                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
-    );
-  };
-
-  if (currentStep === 6) { // Step 6: Generate Guest Audience
-    return (
-      <div className="max-w-4xl mx-auto space-y-12 animate-in slide-in-from-right-8 duration-700">
-        {renderStepHeader('Top Matching Guests', 'AI Targeting Engine running for ' + selectedOffer?.title)}
-
-        <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden ring-1 ring-slate-100">
-           <CardHeader className="bg-slate-50/50 border-b border-slate-100 flex flex-row items-center justify-between p-8">
-              <CardTitle className="text-xl">AI-Targeted Segment</CardTitle>
-              <div className="flex gap-2">
-                 <Button variant="outline" size="sm" onClick={() => setSelectedGuests(topMatchingGuests.map(g => g.id))}>Select All</Button>
-                 <Button variant="ghost" size="sm" onClick={() => setSelectedGuests([])}>Clear</Button>
-              </div>
-           </CardHeader>
-           <CardContent className="p-0">
-              <div className="divide-y divide-slate-50">
-                 {topMatchingGuests.map(guest => (
-                   <div key={guest.id} className="p-8 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                      <div className="flex items-center gap-6">
-                         <button
-                          onClick={() => setSelectedGuests(prev => prev.includes(guest.id) ? prev.filter(id => id !== guest.id) : [...prev, guest.id])}
-                          className={cn("w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all", selectedGuests.includes(guest.id) ? "bg-amber-500 border-amber-500" : "border-slate-200")}
-                         >
-                            {selectedGuests.includes(guest.id) && <CheckCircle2 className="w-4 h-4 text-white" />}
-                         </button>
-                         <div className="w-12 h-12 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold">{guest.name.split(' ').map(n => n[0]).join('')}</div>
-                         <div>
-                            <p className="font-bold text-lg">{guest.name}</p>
-                            <p className="text-xs text-slate-400 uppercase tracking-widest">{guest.country} • {guest.loyaltyStatus} Member</p>
-                         </div>
-                      </div>
-                      <div className="text-right">
-                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Match Score</p>
-                         <p className="text-2xl font-black" style={{ color: COLORS.primary }}>{guest.score}</p>
-                      </div>
-                   </div>
-                 ))}
-              </div>
-           </CardContent>
-        </Card>
-
-        <div className="flex justify-end gap-4">
-           <Button variant="outline" className="px-10 py-6 rounded-2xl" onClick={() => setCurrentStep(2)}>Back</Button>
-           <Button className="px-12 py-6 rounded-2xl font-bold text-lg" style={{ background: COLORS.secondary }} onClick={() => setCurrentStep(7)} disabled={selectedGuests.length === 0}>
-             Generate Templates <ChevronRight className="ml-2 w-5 h-5" />
-           </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (currentStep === 7 || currentStep === 8) { // Step 7/8: Email & SMS Templates
-    return (
-      <div className="max-w-6xl mx-auto space-y-12 animate-in slide-in-from-right-8 duration-700">
-        {renderStepHeader(currentStep === 7 ? 'Generate Email Template' : 'Generate SMS Template', 'Personalized content for ' + selectedGuests.length + ' guests.')}
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-           <div className="md:col-span-2 space-y-8">
-              <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden ring-1 ring-slate-100">
-                 <CardHeader className="border-b border-slate-50 bg-slate-50/50 p-8"><CardTitle>{currentStep === 7 ? 'Email Editor' : 'SMS Editor'}</CardTitle></CardHeader>
-                 <CardContent className="p-10 space-y-8">
-                    {currentStep === 7 ? (
-                      <>
-                        <div className="space-y-2">
-                           <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Subject Line</label>
-                           <input value={emailTemplate.subject} onChange={(e) => setEmailTemplate({...emailTemplate, subject: e.target.value})} className="w-full p-4 rounded-xl border border-slate-100 focus:ring-2 focus:ring-amber-200 outline-none font-bold" />
-                        </div>
-                        <div className="space-y-2">
-                           <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Message Body</label>
-                           <textarea value={emailTemplate.body} onChange={(e) => setEmailTemplate({...emailTemplate, body: e.target.value})} className="w-full p-6 rounded-2xl border border-slate-100 focus:ring-2 focus:ring-amber-200 outline-none min-h-[300px] font-light" />
-                        </div>
-                      </>
-                    ) : (
-                      <div className="space-y-4">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">SMS Content</label>
-                        <textarea value={smsTemplate} onChange={(e) => setSmsTemplate(e.target.value)} className="w-full p-6 rounded-2xl border border-slate-100 focus:ring-2 focus:ring-amber-200 outline-none min-h-[150px] font-medium" />
-                        <p className="text-[10px] font-bold text-slate-400 text-right">{smsTemplate.length} Characters • {Math.ceil(smsTemplate.length / 160)} Segment(s)</p>
-                      </div>
-                    )}
-                 </CardContent>
-              </Card>
-           </div>
-           <div className="space-y-6">
-              <Card className="border-dashed border-2 border-amber-200 rounded-[2rem] bg-amber-50/20">
-                 <CardHeader><CardTitle className="text-sm">AI Optimization Insights</CardTitle></CardHeader>
-                 <CardContent className="space-y-4">
-                    <div className="flex gap-3"><ThumbsUp className="w-4 h-4 text-green-600 shrink-0" /><p className="text-xs text-slate-600 font-medium">Subject line uses &quot;Exclusive&quot;, increasing open rate by 18% for high-loyalty guests.</p></div>
-                    <div className="flex gap-3"><ThumbsUp className="w-4 h-4 text-green-600 shrink-0" /><p className="text-xs text-slate-600 font-medium">Dynamic placeholders detected: {"{{GuestName}}"}.</p></div>
-                    <Button variant="outline" size="sm" className="w-full mt-4 rounded-xl">Regenerate with AI</Button>
-                 </CardContent>
-              </Card>
-              <div className="flex flex-col gap-3 pt-6">
-                 <Button className="py-6 rounded-2xl font-bold text-lg shadow-xl" style={{ background: COLORS.goldGradient }} onClick={() => setCurrentStep(currentStep === 7 ? 8 : 9)}>Next Step</Button>
-                 <Button variant="ghost" className="rounded-2xl py-4 text-slate-400" onClick={() => setCurrentStep(currentStep === 7 ? 8 : 9)}>Skip this channel</Button>
-              </div>
-           </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (currentStep === 9) { // Step 9: Final Approval
-    return (
-      <div className="max-w-4xl mx-auto space-y-12 animate-in fade-in duration-700">
-        {renderStepHeader('Campaign Summary', 'Review and approve your personalized marketing campaign.')}
-
-        <Card className="border-none shadow-2xl rounded-[3rem] overflow-hidden ring-1 ring-slate-100 bg-white">
-           <CardHeader className="bg-slate-50/50 p-10 border-b border-slate-100"><CardTitle className="text-2xl font-serif">Final Approval</CardTitle></CardHeader>
-           <CardContent className="p-12 space-y-12">
-              <div className="grid grid-cols-2 gap-12">
-                 <div className="space-y-8">
-                    <div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2">Offer</label><p className="text-2xl font-serif font-bold text-slate-800">{selectedOffer?.title}</p></div>
-                    <div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2">Primary Hotel</label><p className="text-lg font-bold text-slate-700">{selectedOffer?.hotels[0]}</p></div>
-                    <div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2">Audience Size</label><p className="text-lg font-bold text-slate-700">{selectedGuests.length} Selected Guests</p></div>
-                 </div>
-                 <div className="p-8 rounded-[2.5rem] bg-slate-50 border border-slate-100 flex flex-col justify-center text-center">
-                    <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Estimated Revenue</p>
-                    <p className="text-5xl font-serif font-bold" style={{ color: COLORS.primary }}>{selectedOffer?.revenueImpact}</p>
-                    <div className="flex justify-center gap-4 mt-8">
-                       <span className="flex items-center gap-1.5 text-[10px] font-bold text-green-600 bg-white px-3 py-1.5 rounded-full shadow-sm"><CheckCircle2 className="w-3 h-3" /> Email Ready</span>
-                       <span className="flex items-center gap-1.5 text-[10px] font-bold text-green-600 bg-white px-3 py-1.5 rounded-full shadow-sm"><CheckCircle2 className="w-3 h-3" /> SMS Ready</span>
-                    </div>
-                 </div>
-              </div>
-
-              <div className="pt-12 border-t border-slate-100 flex gap-4">
-                 <Button variant="outline" className="flex-1 py-8 rounded-3xl text-xl font-bold border-slate-200" onClick={() => handleFinishCampaign('Draft')}>Save Draft</Button>
-                 <Button className="flex-[2] py-8 rounded-3xl text-xl font-bold shadow-2xl flex gap-3" style={{ background: COLORS.goldGradient }} onClick={() => handleFinishCampaign('Active')}>
-                    <Send className="w-6 h-6" /> Send Now
-                 </Button>
-              </div>
-           </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
-    <div className="max-w-[1400px] mx-auto p-4 md:p-10 min-h-screen bg-white selection:bg-amber-100 selection:text-amber-900">
-      {renderDashboard()}
-      {ViewDetailsModal()}
-      {CampaignDetailsModal()}
+    <div className="min-h-screen bg-slate-50/30 p-6 lg:p-12">
+      {currentStep === 0 ? renderDashboard() : <div className="text-center p-12 bg-white rounded-3xl shadow-sm border">Wizard Step {currentStep} under construction. <Button onClick={() => setCurrentStep(0)} className="mt-4">Back to Dashboard</Button></div>}
     </div>
   );
 }

@@ -156,7 +156,7 @@ const AnalyticsView = ({
             </div>
           </div>
 
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="mt-6 space-y-6">
             <div className="p-4 rounded-lg border" style={{borderColor: '#E5E5E5'}}>
               <p className="text-sm font-semibold mb-2">Booking Source Trend</p>
               <div className="w-full h-72">
@@ -189,9 +189,7 @@ const AnalyticsView = ({
                 </ResponsiveContainer>
               </div>
             </div>
-          </div>
 
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="p-4 rounded-lg border" style={{borderColor: '#E5E5E5'}}>
               <p className="text-sm font-semibold mb-2">Guest Nationality Distribution</p>
               <div className="w-full h-72 flex items-center justify-center">
@@ -208,7 +206,7 @@ const AnalyticsView = ({
               </div>
             </div>
 
-            <div className="mt-6 p-4 rounded-lg bg-slate-50 border border-dashed" style={{borderColor: '#E5E5E5'}}>
+            <div className="mt-0 p-4 rounded-lg bg-slate-50 border border-dashed" style={{borderColor: '#E5E5E5'}}>
               <p className="text-xs font-bold uppercase text-slate-500 tracking-wider mb-2">Time Period Selector</p>
               <div className="flex gap-2 flex-wrap">
                 {['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'custom'].map((p) => (
