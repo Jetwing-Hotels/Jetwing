@@ -113,7 +113,22 @@ export default function GuestsPage() {
   }
 
 
-    const updatePeriod = (period: string, opts?: { from?: string; to?: string }) => {
+    const AnalyticsView = () => {
+      const router = useRouter();
+      const [timePeriod, setTimePeriod] = useState<string>('monthly');
+      const [customRange, setCustomRange] = useState<{ from: string; to: string }>({ from: '', to: '' });
+
+      useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const params = new URLSearchParams(window.location.search);
+        const p = params.get('period') || 'monthly';
+        setTimePeriod(p);
+        if (p === 'custom') {
+          setCustomRange({ from: params.get('from') || '', to: params.get('to') || '' });
+        }
+      }, []);
+
+      const updatePeriod = (period: string, opts?: { from?: string; to?: string }) => {
       setTimePeriod(period);
       const params = new URLSearchParams(window.location.search);
       params.set('period', period);
@@ -356,17 +371,17 @@ export default function GuestsPage() {
 
               {timePeriod === 'custom' && (
                 <div className="mt-3 flex items-center gap-2">
-                  <input
+                    <input
                     type="date"
                     value={customRange.from}
-                    onChange={(e) => setCustomRange((s) => ({ ...s, from: e.target.value }))}
+                    onChange={(e) => setCustomRange((s: { from: string; to: string }) => ({ ...s, from: e.target.value }))}
                     className="border rounded px-2 py-1 text-sm"
                   />
                   <span className="text-sm text-slate-500">to</span>
                   <input
                     type="date"
                     value={customRange.to}
-                    onChange={(e) => setCustomRange((s) => ({ ...s, to: e.target.value }))}
+                    onChange={(e) => setCustomRange((s: { from: string; to: string }) => ({ ...s, to: e.target.value }))}
                     className="border rounded px-2 py-1 text-sm"
                   />
                   <Button size="sm" variant="default" onClick={() => updatePeriod('custom', { from: customRange.from, to: customRange.to })}>
