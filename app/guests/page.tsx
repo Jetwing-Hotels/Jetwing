@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Search, Star, MapPin, Calendar, Clock, Sparkles } from 'lucide-react';
 import FilteringModule from '@/components/guests/FilteringModule';
+import OfferIntelligence from '@/components/guests/OfferIntelligence';
 
 const guestProfiles = [
   { 
@@ -43,6 +44,12 @@ export default function GuestsPage() {
   const [view, setView] = useState<'analytics' | 'filtering' | 'recommendations'>('analytics');
 
   useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const viewParam = searchParams.get('view');
+    if (viewParam === 'analytics' || viewParam === 'filtering' || viewParam === 'recommendations') {
+      setView(viewParam);
+    }
+
     const handleViewChange = (event: Event) => {
       const customEvent = event as CustomEvent;
       setView(customEvent.detail.view);
@@ -54,6 +61,10 @@ export default function GuestsPage() {
 
   if (view === 'filtering') {
     return <FilteringModule />;
+  }
+
+  if (view === 'recommendations') {
+    return <OfferIntelligence />;
   }
 
   return (
