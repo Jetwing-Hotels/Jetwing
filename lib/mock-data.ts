@@ -7,8 +7,8 @@ export const PASSENGERS = [
     "bookingReference": "JW968338",
     "country": "Germany",
     "hotel": "Jetwing Yala",
-    "checkIn": "2026-None-15",
-    "checkOut": "2026-None-24",
+    "checkIn": "2026-07-15",
+    "checkOut": "2026-07-24",
     "bookingSource": "Booking.com",
     "futureBooking": "No",
     "guestType": "VIP Guest",
@@ -23,22 +23,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Kaduruketha",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Yala",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW662451",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 762
       },
       {
         "ref": "JW236010",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 386
       }
     ]
@@ -51,8 +51,8 @@ export const PASSENGERS = [
     "bookingReference": "JW614139",
     "country": "China",
     "hotel": "Jetwing Vil Uyana",
-    "checkIn": "2026-None-15",
-    "checkOut": "2026-None-17",
+    "checkIn": "2026-07-15",
+    "checkOut": "2026-07-17",
     "bookingSource": "Expedia",
     "futureBooking": "No",
     "guestType": "VIP Guest",
@@ -67,22 +67,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Yala",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Lighthouse",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW807646",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 635
       },
       {
         "ref": "JW264883",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 452
       }
     ]
@@ -95,8 +95,8 @@ export const PASSENGERS = [
     "bookingReference": "JW820013",
     "country": "France",
     "hotel": "Jetwing Kaduruketha",
-    "checkIn": "2026-None-15",
-    "checkOut": "2026-None-18",
+    "checkIn": "2026-07-15",
+    "checkOut": "2026-07-18",
     "bookingSource": "Booking.com",
     "futureBooking": "Yes",
     "guestType": "New Guest",
@@ -112,22 +112,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Yala",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Lagoon",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW351479",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 519
       },
       {
         "ref": "JW648277",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 531
       }
     ]
@@ -140,8 +140,8 @@ export const PASSENGERS = [
     "bookingReference": "JW575831",
     "country": "United Kingdom",
     "hotel": "Jetwing Yala",
-    "checkIn": "2026-None-15",
-    "checkOut": "2026-None-22",
+    "checkIn": "2026-07-15",
+    "checkOut": "2026-07-22",
     "bookingSource": "Agoda",
     "futureBooking": "Yes",
     "guestType": "VIP Guest",
@@ -155,22 +155,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Vil Uyana",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Vil Uyana",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW424929",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 946
       },
       {
         "ref": "JW539898",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 981
       }
     ]
@@ -183,8 +183,8 @@ export const PASSENGERS = [
     "bookingReference": "JW687005",
     "country": "France",
     "hotel": "Jetwing Blue",
-    "checkIn": "2026-None-15",
-    "checkOut": "2026-None-23",
+    "checkIn": "2026-07-15",
+    "checkOut": "2026-07-23",
     "bookingSource": "Agoda",
     "futureBooking": "No",
     "guestType": "VIP Guest",
@@ -198,22 +198,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Yala",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Yala",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW359327",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 778
       },
       {
         "ref": "JW383725",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 267
       }
     ]
@@ -226,8 +226,8 @@ export const PASSENGERS = [
     "bookingReference": "JW821688",
     "country": "Germany",
     "hotel": "Jetwing Yala",
-    "checkIn": "2026-None-05",
-    "checkOut": "2026-None-11",
+    "checkIn": "2026-07-05",
+    "checkOut": "2026-07-11",
     "bookingSource": "Booking.com",
     "futureBooking": "Yes",
     "guestType": "Repeat Guest",
@@ -241,22 +241,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Lighthouse",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Blue",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW800375",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 509
       },
       {
         "ref": "JW473367",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 756
       }
     ]
@@ -269,8 +269,8 @@ export const PASSENGERS = [
     "bookingReference": "JW714684",
     "country": "Germany",
     "hotel": "Jetwing Yala",
-    "checkIn": "2026-None-10",
-    "checkOut": "2026-None-19",
+    "checkIn": "2026-07-10",
+    "checkOut": "2026-07-19",
     "bookingSource": "Agoda",
     "futureBooking": "No",
     "guestType": "Repeat Guest",
@@ -285,22 +285,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Lagoon",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Lighthouse",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW314804",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 499
       },
       {
         "ref": "JW917690",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 263
       }
     ]
@@ -313,8 +313,8 @@ export const PASSENGERS = [
     "bookingReference": "JW728195",
     "country": "United States",
     "hotel": "Jetwing Lighthouse",
-    "checkIn": "2026-None-15",
-    "checkOut": "2026-None-23",
+    "checkIn": "2026-07-15",
+    "checkOut": "2026-07-23",
     "bookingSource": "Travel Agent",
     "futureBooking": "Yes",
     "guestType": "Repeat Guest",
@@ -327,22 +327,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Vil Uyana",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Lighthouse",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW927836",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 787
       },
       {
         "ref": "JW104075",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 881
       }
     ]
@@ -355,8 +355,8 @@ export const PASSENGERS = [
     "bookingReference": "JW299082",
     "country": "Germany",
     "hotel": "Jetwing Kaduruketha",
-    "checkIn": "2026-None-05",
-    "checkOut": "2026-None-16",
+    "checkIn": "2026-07-05",
+    "checkOut": "2026-07-16",
     "bookingSource": "Expedia",
     "futureBooking": "No",
     "guestType": "Repeat Guest",
@@ -370,22 +370,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Kaduruketha",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Lighthouse",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW800122",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 525
       },
       {
         "ref": "JW681194",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 953
       }
     ]
@@ -398,8 +398,8 @@ export const PASSENGERS = [
     "bookingReference": "JW941800",
     "country": "Germany",
     "hotel": "Jetwing Blue",
-    "checkIn": "2026-None-29",
-    "checkOut": "2026-None-10",
+    "checkIn": "2026-07-29",
+    "checkOut": "2026-08-05",
     "bookingSource": "Direct Website",
     "futureBooking": "Yes",
     "guestType": "Repeat Guest",
@@ -412,22 +412,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Kaduruketha",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Blue",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW808954",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 998
       },
       {
         "ref": "JW178087",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 931
       }
     ]
@@ -440,8 +440,8 @@ export const PASSENGERS = [
     "bookingReference": "JW808879",
     "country": "United States",
     "hotel": "Jetwing Kaduruketha",
-    "checkIn": "2026-None-08",
-    "checkOut": "2026-None-10",
+    "checkIn": "2026-07-08",
+    "checkOut": "2026-07-10",
     "bookingSource": "Direct Website",
     "futureBooking": "Yes",
     "guestType": "New Guest",
@@ -457,22 +457,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Blue",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Lighthouse",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW637107",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 206
       },
       {
         "ref": "JW913520",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 516
       }
     ]
@@ -485,8 +485,8 @@ export const PASSENGERS = [
     "bookingReference": "JW139695",
     "country": "Germany",
     "hotel": "Jetwing Lighthouse",
-    "checkIn": "2026-None-05",
-    "checkOut": "2026-None-07",
+    "checkIn": "2026-07-05",
+    "checkOut": "2026-07-07",
     "bookingSource": "Agoda",
     "futureBooking": "No",
     "guestType": "VIP Guest",
@@ -502,22 +502,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Lighthouse",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Vil Uyana",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW456937",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 569
       },
       {
         "ref": "JW628586",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 317
       }
     ]
@@ -530,8 +530,8 @@ export const PASSENGERS = [
     "bookingReference": "JW332092",
     "country": "China",
     "hotel": "Jetwing Vil Uyana",
-    "checkIn": "2026-None-23",
-    "checkOut": "2026-None-25",
+    "checkIn": "2026-07-23",
+    "checkOut": "2026-07-25",
     "bookingSource": "Agoda",
     "futureBooking": "No",
     "guestType": "VIP Guest",
@@ -544,22 +544,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Vil Uyana",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Lagoon",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW347979",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 354
       },
       {
         "ref": "JW664048",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 738
       }
     ]
@@ -572,8 +572,8 @@ export const PASSENGERS = [
     "bookingReference": "JW369760",
     "country": "United Kingdom",
     "hotel": "Jetwing Kaduruketha",
-    "checkIn": "2026-None-28",
-    "checkOut": "2026-None-30",
+    "checkIn": "2026-07-28",
+    "checkOut": "2026-07-30",
     "bookingSource": "Expedia",
     "futureBooking": "No",
     "guestType": "New Guest",
@@ -588,22 +588,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Lagoon",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Lagoon",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW727723",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 293
       },
       {
         "ref": "JW682578",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 754
       }
     ]
@@ -616,8 +616,8 @@ export const PASSENGERS = [
     "bookingReference": "JW925928",
     "country": "Germany",
     "hotel": "Jetwing Kaduruketha",
-    "checkIn": "2026-None-27",
-    "checkOut": "2026-None-07",
+    "checkIn": "2026-07-27",
+    "checkOut": "2026-08-03",
     "bookingSource": "Booking.com",
     "futureBooking": "Yes",
     "guestType": "Repeat Guest",
@@ -633,22 +633,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Blue",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Yala",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW874434",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 479
       },
       {
         "ref": "JW249092",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 583
       }
     ]
@@ -661,8 +661,8 @@ export const PASSENGERS = [
     "bookingReference": "JW970886",
     "country": "France",
     "hotel": "Jetwing Lighthouse",
-    "checkIn": "2026-None-24",
-    "checkOut": "2026-None-02",
+    "checkIn": "2026-07-24",
+    "checkOut": "2026-07-31",
     "bookingSource": "Travel Agent",
     "futureBooking": "No",
     "guestType": "Repeat Guest",
@@ -678,22 +678,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Kaduruketha",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Lagoon",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW505334",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 633
       },
       {
         "ref": "JW384792",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 491
       }
     ]
@@ -706,8 +706,8 @@ export const PASSENGERS = [
     "bookingReference": "JW499697",
     "country": "Sri Lanka",
     "hotel": "Jetwing Yala",
-    "checkIn": "2026-None-27",
-    "checkOut": "2026-None-28",
+    "checkIn": "2026-07-27",
+    "checkOut": "2026-07-28",
     "bookingSource": "Expedia",
     "futureBooking": "Yes",
     "guestType": "New Guest",
@@ -723,22 +723,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Kaduruketha",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Lighthouse",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW657177",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 436
       },
       {
         "ref": "JW627566",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 916
       }
     ]
@@ -751,8 +751,8 @@ export const PASSENGERS = [
     "bookingReference": "JW528651",
     "country": "Australia",
     "hotel": "Jetwing Yala",
-    "checkIn": "2026-None-01",
-    "checkOut": "2026-None-09",
+    "checkIn": "2026-07-01",
+    "checkOut": "2026-07-09",
     "bookingSource": "Expedia",
     "futureBooking": "No",
     "guestType": "New Guest",
@@ -766,22 +766,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Lighthouse",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Blue",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW761301",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 484
       },
       {
         "ref": "JW878307",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 743
       }
     ]
@@ -794,8 +794,8 @@ export const PASSENGERS = [
     "bookingReference": "JW604183",
     "country": "Germany",
     "hotel": "Jetwing Kaduruketha",
-    "checkIn": "2026-None-25",
-    "checkOut": "2026-None-05",
+    "checkIn": "2026-07-25",
+    "checkOut": "2026-08-01",
     "bookingSource": "Travel Agent",
     "futureBooking": "Yes",
     "guestType": "New Guest",
@@ -809,22 +809,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Lighthouse",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Lagoon",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW246875",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 506
       },
       {
         "ref": "JW262065",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 705
       }
     ]
@@ -837,8 +837,8 @@ export const PASSENGERS = [
     "bookingReference": "JW414473",
     "country": "France",
     "hotel": "Jetwing Vil Uyana",
-    "checkIn": "2026-None-08",
-    "checkOut": "2026-None-20",
+    "checkIn": "2026-07-08",
+    "checkOut": "2026-07-20",
     "bookingSource": "Booking.com",
     "futureBooking": "No",
     "guestType": "Repeat Guest",
@@ -851,22 +851,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Vil Uyana",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Kaduruketha",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW702040",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 310
       },
       {
         "ref": "JW546970",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 905
       }
     ]
@@ -879,8 +879,8 @@ export const PASSENGERS = [
     "bookingReference": "JW805758",
     "country": "China",
     "hotel": "Jetwing Lagoon",
-    "checkIn": "2026-None-09",
-    "checkOut": "2026-None-15",
+    "checkIn": "2026-07-09",
+    "checkOut": "2026-07-15",
     "bookingSource": "Travel Agent",
     "futureBooking": "No",
     "guestType": "Repeat Guest",
@@ -896,22 +896,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Vil Uyana",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Blue",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW595281",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 403
       },
       {
         "ref": "JW816288",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 997
       }
     ]
@@ -924,8 +924,8 @@ export const PASSENGERS = [
     "bookingReference": "JW827219",
     "country": "France",
     "hotel": "Jetwing Blue",
-    "checkIn": "2026-None-16",
-    "checkOut": "2026-None-17",
+    "checkIn": "2026-07-16",
+    "checkOut": "2026-07-17",
     "bookingSource": "Travel Agent",
     "futureBooking": "No",
     "guestType": "VIP Guest",
@@ -939,22 +939,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Blue",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Yala",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW773210",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 222
       },
       {
         "ref": "JW606096",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 310
       }
     ]
@@ -967,8 +967,8 @@ export const PASSENGERS = [
     "bookingReference": "JW340816",
     "country": "Germany",
     "hotel": "Jetwing Vil Uyana",
-    "checkIn": "2026-None-07",
-    "checkOut": "2026-None-09",
+    "checkIn": "2026-07-07",
+    "checkOut": "2026-07-09",
     "bookingSource": "Agoda",
     "futureBooking": "Yes",
     "guestType": "Repeat Guest",
@@ -982,22 +982,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Vil Uyana",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Lighthouse",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW813566",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 354
       },
       {
         "ref": "JW549545",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 893
       }
     ]
@@ -1010,8 +1010,8 @@ export const PASSENGERS = [
     "bookingReference": "JW287401",
     "country": "France",
     "hotel": "Jetwing Lagoon",
-    "checkIn": "2026-None-19",
-    "checkOut": "2026-None-25",
+    "checkIn": "2026-07-19",
+    "checkOut": "2026-07-25",
     "bookingSource": "Expedia",
     "futureBooking": "No",
     "guestType": "New Guest",
@@ -1026,22 +1026,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Lagoon",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Lighthouse",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW828962",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 282
       },
       {
         "ref": "JW922341",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 701
       }
     ]
@@ -1054,8 +1054,8 @@ export const PASSENGERS = [
     "bookingReference": "JW183462",
     "country": "Australia",
     "hotel": "Jetwing Lagoon",
-    "checkIn": "2026-None-28",
-    "checkOut": "2026-None-04",
+    "checkIn": "2026-07-28",
+    "checkOut": "2026-08-04",
     "bookingSource": "Direct Website",
     "futureBooking": "Yes",
     "guestType": "New Guest",
@@ -1068,22 +1068,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Yala",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Lagoon",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW416125",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 769
       },
       {
         "ref": "JW513188",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 299
       }
     ]
@@ -1096,8 +1096,8 @@ export const PASSENGERS = [
     "bookingReference": "JW877809",
     "country": "China",
     "hotel": "Jetwing Lighthouse",
-    "checkIn": "2026-None-10",
-    "checkOut": "2026-None-15",
+    "checkIn": "2026-07-10",
+    "checkOut": "2026-07-15",
     "bookingSource": "Booking.com",
     "futureBooking": "Yes",
     "guestType": "Repeat Guest",
@@ -1113,22 +1113,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Lighthouse",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Vil Uyana",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW830338",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 554
       },
       {
         "ref": "JW456032",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 555
       }
     ]
@@ -1141,8 +1141,8 @@ export const PASSENGERS = [
     "bookingReference": "JW433910",
     "country": "Sri Lanka",
     "hotel": "Jetwing Blue",
-    "checkIn": "2026-None-09",
-    "checkOut": "2026-None-16",
+    "checkIn": "2026-07-09",
+    "checkOut": "2026-07-16",
     "bookingSource": "Expedia",
     "futureBooking": "Yes",
     "guestType": "New Guest",
@@ -1156,22 +1156,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Kaduruketha",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Kaduruketha",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW979268",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 361
       },
       {
         "ref": "JW148180",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 623
       }
     ]
@@ -1184,8 +1184,8 @@ export const PASSENGERS = [
     "bookingReference": "JW166760",
     "country": "Sri Lanka",
     "hotel": "Jetwing Lighthouse",
-    "checkIn": "2026-None-20",
-    "checkOut": "2026-None-31",
+    "checkIn": "2026-07-20",
+    "checkOut": "2026-07-31",
     "bookingSource": "Agoda",
     "futureBooking": "No",
     "guestType": "VIP Guest",
@@ -1199,22 +1199,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Vil Uyana",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Yala",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW930764",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 696
       },
       {
         "ref": "JW643625",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 398
       }
     ]
@@ -1227,8 +1227,8 @@ export const PASSENGERS = [
     "bookingReference": "JW423774",
     "country": "China",
     "hotel": "Jetwing Yala",
-    "checkIn": "2026-None-20",
-    "checkOut": "2026-None-05",
+    "checkIn": "2026-07-20",
+    "checkOut": "2026-07-27",
     "bookingSource": "Expedia",
     "futureBooking": "Yes",
     "guestType": "VIP Guest",
@@ -1244,22 +1244,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Vil Uyana",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Kaduruketha",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW624148",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 310
       },
       {
         "ref": "JW920590",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 285
       }
     ]
@@ -1272,8 +1272,8 @@ export const PASSENGERS = [
     "bookingReference": "JW703667",
     "country": "United States",
     "hotel": "Jetwing Lagoon",
-    "checkIn": "2026-None-12",
-    "checkOut": "2026-None-21",
+    "checkIn": "2026-07-12",
+    "checkOut": "2026-07-21",
     "bookingSource": "Expedia",
     "futureBooking": "Yes",
     "guestType": "VIP Guest",
@@ -1287,22 +1287,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Lighthouse",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Blue",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW533925",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 930
       },
       {
         "ref": "JW605473",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 592
       }
     ]
@@ -1315,8 +1315,8 @@ export const PASSENGERS = [
     "bookingReference": "JW886996",
     "country": "Germany",
     "hotel": "Jetwing Blue",
-    "checkIn": "2026-None-11",
-    "checkOut": "2026-None-14",
+    "checkIn": "2026-07-11",
+    "checkOut": "2026-07-14",
     "bookingSource": "Travel Agent",
     "futureBooking": "No",
     "guestType": "VIP Guest",
@@ -1332,22 +1332,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Yala",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Lighthouse",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW143319",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 984
       },
       {
         "ref": "JW814345",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 226
       }
     ]
@@ -1360,8 +1360,8 @@ export const PASSENGERS = [
     "bookingReference": "JW716311",
     "country": "India",
     "hotel": "Jetwing Kaduruketha",
-    "checkIn": "2026-None-27",
-    "checkOut": "2026-None-02",
+    "checkIn": "2026-07-27",
+    "checkOut": "2026-08-03",
     "bookingSource": "Agoda",
     "futureBooking": "Yes",
     "guestType": "New Guest",
@@ -1374,22 +1374,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Lighthouse",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Vil Uyana",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW175746",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 574
       },
       {
         "ref": "JW476610",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 970
       }
     ]
@@ -1402,8 +1402,8 @@ export const PASSENGERS = [
     "bookingReference": "JW324894",
     "country": "India",
     "hotel": "Jetwing Lighthouse",
-    "checkIn": "2026-None-19",
-    "checkOut": "2026-None-28",
+    "checkIn": "2026-07-19",
+    "checkOut": "2026-07-28",
     "bookingSource": "Travel Agent",
     "futureBooking": "No",
     "guestType": "Repeat Guest",
@@ -1417,22 +1417,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Kaduruketha",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Kaduruketha",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW875345",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 273
       },
       {
         "ref": "JW187583",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 647
       }
     ]
@@ -1445,8 +1445,8 @@ export const PASSENGERS = [
     "bookingReference": "JW374226",
     "country": "Australia",
     "hotel": "Jetwing Lighthouse",
-    "checkIn": "2026-None-06",
-    "checkOut": "2026-None-08",
+    "checkIn": "2026-07-06",
+    "checkOut": "2026-07-08",
     "bookingSource": "Travel Agent",
     "futureBooking": "Yes",
     "guestType": "New Guest",
@@ -1459,22 +1459,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Lighthouse",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Blue",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW254091",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 372
       },
       {
         "ref": "JW235447",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 286
       }
     ]
@@ -1487,8 +1487,8 @@ export const PASSENGERS = [
     "bookingReference": "JW882279",
     "country": "United Kingdom",
     "hotel": "Jetwing Vil Uyana",
-    "checkIn": "2026-None-14",
-    "checkOut": "2026-None-28",
+    "checkIn": "2026-07-14",
+    "checkOut": "2026-07-28",
     "bookingSource": "Booking.com",
     "futureBooking": "Yes",
     "guestType": "New Guest",
@@ -1503,22 +1503,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Vil Uyana",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Lagoon",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW668064",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 725
       },
       {
         "ref": "JW718348",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 814
       }
     ]
@@ -1531,8 +1531,8 @@ export const PASSENGERS = [
     "bookingReference": "JW747662",
     "country": "United Kingdom",
     "hotel": "Jetwing Blue",
-    "checkIn": "2026-None-26",
-    "checkOut": "2026-None-11",
+    "checkIn": "2026-07-26",
+    "checkOut": "2026-08-02",
     "bookingSource": "Agoda",
     "futureBooking": "Yes",
     "guestType": "New Guest",
@@ -1546,22 +1546,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Vil Uyana",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Lighthouse",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW157798",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 335
       },
       {
         "ref": "JW731260",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 615
       }
     ]
@@ -1574,8 +1574,8 @@ export const PASSENGERS = [
     "bookingReference": "JW953425",
     "country": "Sri Lanka",
     "hotel": "Jetwing Vil Uyana",
-    "checkIn": "2026-None-12",
-    "checkOut": "2026-None-22",
+    "checkIn": "2026-07-12",
+    "checkOut": "2026-07-22",
     "bookingSource": "Travel Agent",
     "futureBooking": "Yes",
     "guestType": "Repeat Guest",
@@ -1591,22 +1591,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Yala",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Yala",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW114153",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 392
       },
       {
         "ref": "JW629651",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 410
       }
     ]
@@ -1619,8 +1619,8 @@ export const PASSENGERS = [
     "bookingReference": "JW818267",
     "country": "France",
     "hotel": "Jetwing Blue",
-    "checkIn": "2026-None-16",
-    "checkOut": "2026-None-24",
+    "checkIn": "2026-07-16",
+    "checkOut": "2026-07-24",
     "bookingSource": "Expedia",
     "futureBooking": "Yes",
     "guestType": "VIP Guest",
@@ -1634,22 +1634,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Blue",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Yala",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW740694",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 839
       },
       {
         "ref": "JW964987",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 685
       }
     ]
@@ -1662,8 +1662,8 @@ export const PASSENGERS = [
     "bookingReference": "JW463227",
     "country": "United States",
     "hotel": "Jetwing Blue",
-    "checkIn": "2026-None-24",
-    "checkOut": "2026-None-01",
+    "checkIn": "2026-07-24",
+    "checkOut": "2026-07-31",
     "bookingSource": "Travel Agent",
     "futureBooking": "No",
     "guestType": "New Guest",
@@ -1676,22 +1676,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Lagoon",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Kaduruketha",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW839256",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 603
       },
       {
         "ref": "JW356431",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 583
       }
     ]
@@ -1704,8 +1704,8 @@ export const PASSENGERS = [
     "bookingReference": "JW972110",
     "country": "United Kingdom",
     "hotel": "Jetwing Lighthouse",
-    "checkIn": "2026-None-21",
-    "checkOut": "2026-None-22",
+    "checkIn": "2026-07-21",
+    "checkOut": "2026-07-22",
     "bookingSource": "Direct Website",
     "futureBooking": "No",
     "guestType": "VIP Guest",
@@ -1719,22 +1719,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Blue",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Vil Uyana",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW849763",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 711
       },
       {
         "ref": "JW331252",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 287
       }
     ]
@@ -1747,8 +1747,8 @@ export const PASSENGERS = [
     "bookingReference": "JW848365",
     "country": "France",
     "hotel": "Jetwing Lagoon",
-    "checkIn": "2026-None-04",
-    "checkOut": "2026-None-16",
+    "checkIn": "2026-07-04",
+    "checkOut": "2026-07-16",
     "bookingSource": "Booking.com",
     "futureBooking": "Yes",
     "guestType": "New Guest",
@@ -1763,22 +1763,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Vil Uyana",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Blue",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW644039",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 539
       },
       {
         "ref": "JW205913",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 646
       }
     ]
@@ -1791,8 +1791,8 @@ export const PASSENGERS = [
     "bookingReference": "JW371769",
     "country": "China",
     "hotel": "Jetwing Vil Uyana",
-    "checkIn": "2026-None-28",
-    "checkOut": "2026-None-09",
+    "checkIn": "2026-07-28",
+    "checkOut": "2026-08-04",
     "bookingSource": "Agoda",
     "futureBooking": "Yes",
     "guestType": "New Guest",
@@ -1808,22 +1808,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Blue",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Vil Uyana",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW658128",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 662
       },
       {
         "ref": "JW243049",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 903
       }
     ]
@@ -1836,8 +1836,8 @@ export const PASSENGERS = [
     "bookingReference": "JW261020",
     "country": "France",
     "hotel": "Jetwing Kaduruketha",
-    "checkIn": "2026-None-09",
-    "checkOut": "2026-None-19",
+    "checkIn": "2026-07-09",
+    "checkOut": "2026-07-19",
     "bookingSource": "Expedia",
     "futureBooking": "Yes",
     "guestType": "Repeat Guest",
@@ -1850,22 +1850,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Blue",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Blue",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW655415",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 641
       },
       {
         "ref": "JW226342",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 393
       }
     ]
@@ -1878,8 +1878,8 @@ export const PASSENGERS = [
     "bookingReference": "JW524806",
     "country": "United Kingdom",
     "hotel": "Jetwing Vil Uyana",
-    "checkIn": "2026-None-05",
-    "checkOut": "2026-None-13",
+    "checkIn": "2026-07-05",
+    "checkOut": "2026-07-13",
     "bookingSource": "Agoda",
     "futureBooking": "No",
     "guestType": "Repeat Guest",
@@ -1895,22 +1895,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Lighthouse",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Vil Uyana",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW930398",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 503
       },
       {
         "ref": "JW583091",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 730
       }
     ]
@@ -1923,8 +1923,8 @@ export const PASSENGERS = [
     "bookingReference": "JW760382",
     "country": "Sri Lanka",
     "hotel": "Jetwing Blue",
-    "checkIn": "2026-None-10",
-    "checkOut": "2026-None-13",
+    "checkIn": "2026-07-10",
+    "checkOut": "2026-07-13",
     "bookingSource": "Booking.com",
     "futureBooking": "No",
     "guestType": "Repeat Guest",
@@ -1937,22 +1937,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Blue",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Kaduruketha",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW993089",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 929
       },
       {
         "ref": "JW783115",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 855
       }
     ]
@@ -1966,7 +1966,7 @@ export const PASSENGERS = [
     "country": "Sri Lanka",
     "hotel": "Jetwing Lighthouse",
     "checkIn": "2026-05-29",
-    "checkOut": "2026-None-04",
+    "checkOut": "2026-07-04",
     "bookingSource": "Agoda",
     "futureBooking": "Yes",
     "guestType": "New Guest",
@@ -1980,22 +1980,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Lighthouse",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Lagoon",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW861541",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 455
       },
       {
         "ref": "JW747314",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 467
       }
     ]
@@ -2008,8 +2008,8 @@ export const PASSENGERS = [
     "bookingReference": "JW409985",
     "country": "France",
     "hotel": "Jetwing Yala",
-    "checkIn": "2026-None-21",
-    "checkOut": "2026-None-23",
+    "checkIn": "2026-07-21",
+    "checkOut": "2026-07-23",
     "bookingSource": "Booking.com",
     "futureBooking": "No",
     "guestType": "New Guest",
@@ -2025,22 +2025,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Yala",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Vil Uyana",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW307556",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 803
       },
       {
         "ref": "JW659827",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 343
       }
     ]
@@ -2053,8 +2053,8 @@ export const PASSENGERS = [
     "bookingReference": "JW382867",
     "country": "Germany",
     "hotel": "Jetwing Vil Uyana",
-    "checkIn": "2026-None-22",
-    "checkOut": "2026-None-03",
+    "checkIn": "2026-07-22",
+    "checkOut": "2026-07-29",
     "bookingSource": "Travel Agent",
     "futureBooking": "Yes",
     "guestType": "New Guest",
@@ -2069,22 +2069,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Lighthouse",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Blue",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW441098",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 980
       },
       {
         "ref": "JW741254",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 518
       }
     ]
@@ -2097,8 +2097,8 @@ export const PASSENGERS = [
     "bookingReference": "JW347994",
     "country": "Australia",
     "hotel": "Jetwing Lighthouse",
-    "checkIn": "2026-None-10",
-    "checkOut": "2026-None-15",
+    "checkIn": "2026-07-10",
+    "checkOut": "2026-07-15",
     "bookingSource": "Booking.com",
     "futureBooking": "Yes",
     "guestType": "Repeat Guest",
@@ -2112,22 +2112,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Kaduruketha",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Vil Uyana",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW723025",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 819
       },
       {
         "ref": "JW202657",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 381
       }
     ]
@@ -2140,8 +2140,8 @@ export const PASSENGERS = [
     "bookingReference": "JW559171",
     "country": "India",
     "hotel": "Jetwing Lighthouse",
-    "checkIn": "2026-None-04",
-    "checkOut": "2026-None-11",
+    "checkIn": "2026-07-04",
+    "checkOut": "2026-07-11",
     "bookingSource": "Expedia",
     "futureBooking": "Yes",
     "guestType": "New Guest",
@@ -2155,22 +2155,22 @@ export const PASSENGERS = [
     "hotelHistory": [
       {
         "hotel": "Jetwing Lagoon",
-        "date": "2024-None-15"
+        "date": "2024-07-15"
       },
       {
         "hotel": "Jetwing Blue",
-        "date": "2025-None-10"
+        "date": "2025-07-10"
       }
     ],
     "bookingHistory": [
       {
         "ref": "JW309046",
-        "date": "2024-None-15",
+        "date": "2024-07-15",
         "amount": 498
       },
       {
         "ref": "JW568929",
-        "date": "2025-None-10",
+        "date": "2025-07-10",
         "amount": 720
       }
     ]
