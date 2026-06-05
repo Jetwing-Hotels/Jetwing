@@ -1,9 +1,10 @@
 "use client"
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Search, Star, MapPin, Calendar, Clock, Sparkles } from 'lucide-react';
+import FilteringModule from '@/components/guests/FilteringModule';
 
 const guestProfiles = [
   { 
@@ -39,6 +40,22 @@ const guestProfiles = [
 ];
 
 export default function GuestsPage() {
+  const [view, setView] = useState<'analytics' | 'filtering' | 'recommendations'>('analytics');
+
+  useEffect(() => {
+    const handleViewChange = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      setView(customEvent.detail.view);
+    };
+
+    window.addEventListener('guestViewChange', handleViewChange);
+    return () => window.removeEventListener('guestViewChange', handleViewChange);
+  }, []);
+
+  if (view === 'filtering') {
+    return <FilteringModule />;
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-end">
