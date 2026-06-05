@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import './button.css';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+  variant?: 'default' | 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
 }
 
@@ -15,6 +15,7 @@ export function Button({
   ...props 
 }: ButtonProps) {
   const variants = {
+    default: "jetwing-btn-primary text-white dark:text-white transition-all duration-200",
     primary: "jetwing-btn-primary text-white dark:text-white transition-all duration-200",
     secondary: "jetwing-btn-secondary text-white dark:text-white transition-all duration-200",
     outline: "jetwing-btn-outline bg-transparent border-2 transition-all duration-200",
