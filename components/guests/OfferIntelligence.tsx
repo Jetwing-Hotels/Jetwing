@@ -70,10 +70,11 @@ interface Recommendation {
 interface Campaign {
   id: string;
   name: string;
+  image: string;
   hotel: string;
   offerType: string;
   audience: string;
-  status: 'Draft' | 'Scheduled' | 'Active' | 'Completed';
+  status: 'Draft' | 'Scheduled' | 'Active' | 'Completed' | 'AI Recommended';
   revenueImpact: string;
   performance: string;
   dateCreated: string;
@@ -185,11 +186,17 @@ const MOCK_RECOMMENDATIONS: Recommendation[] = [
 ];
 
 const INITIAL_CAMPAIGNS: Campaign[] = [
-  { id: 'c1', name: 'Safari Adventure Summer', hotel: 'Jetwing Yala', offerType: 'Package', audience: 'German Market', status: 'Active', revenueImpact: 'LKR 4.2M', performance: '18.4%', dateCreated: '15-May-2026' },
-  { id: 'c2', name: 'Ayurveda Autumn', hotel: 'Jetwing Blue', offerType: 'Wellness', audience: 'Repeat Guests', status: 'Scheduled', revenueImpact: 'LKR 1.5M', performance: '12.1%', dateCreated: '10-May-2026' },
-  { id: 'c3', name: 'Family Festive Break', hotel: 'Jetwing St. Andrew’s', offerType: 'Family', audience: 'Indian Markets', status: 'Draft', revenueImpact: 'LKR 3.5M', performance: '-', dateCreated: '20-May-2026' },
-  { id: 'c4', name: 'Elite Coastal Stay', hotel: 'Jetwing Lighthouse', offerType: 'Luxury', audience: 'UK Market', status: 'Completed', revenueImpact: 'LKR 2.9M', performance: '21.5%', dateCreated: '01-May-2026' },
-  { id: 'c5', name: 'Whale Watching Galle', hotel: 'Jetwing Lighthouse', offerType: 'Excursion', audience: 'UK Market', status: 'Active', revenueImpact: 'LKR 1.2M', performance: '15.2%', dateCreated: '05-Jun-2026' },
+  { id: 'c1', name: 'Safari Adventure Summer', image: 'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&q=80&w=800', hotel: 'Jetwing Yala', offerType: 'Package', audience: 'German Market', status: 'Active', revenueImpact: 'LKR 4.2M', performance: '18.4%', dateCreated: '15-May-2026' },
+  { id: 'c2', name: 'Ayurveda Autumn', image: 'https://images.unsplash.com/photo-1544161515-4af6b1d4640b?auto=format&fit=crop&q=80&w=800', hotel: 'Jetwing Blue', offerType: 'Wellness', audience: 'Repeat Guests', status: 'Scheduled', revenueImpact: 'LKR 1.5M', performance: '12.1%', dateCreated: '10-May-2026' },
+  { id: 'c3', name: 'Family Festive Break', image: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&q=80&w=800', hotel: 'Jetwing St. Andrew’s', offerType: 'Family', audience: 'Indian Markets', status: 'Draft', revenueImpact: 'LKR 3.5M', performance: '-', dateCreated: '20-May-2026' },
+  { id: 'c4', name: 'Elite Coastal Stay', image: 'https://images.unsplash.com/photo-1540553016722-983e48a2cd10?auto=format&fit=crop&q=80&w=800', hotel: 'Jetwing Lighthouse', offerType: 'Luxury', audience: 'UK Market', status: 'Completed', revenueImpact: 'LKR 2.9M', performance: '21.5%', dateCreated: '01-May-2026' },
+  { id: 'c5', name: 'Whale Watching Galle', image: 'https://images.unsplash.com/photo-1568430462989-44163eb1752f?auto=format&fit=crop&q=80&w=800', hotel: 'Jetwing Lighthouse', offerType: 'Excursion', audience: 'UK Market', status: 'Active', revenueImpact: 'LKR 1.2M', performance: '15.2%', dateCreated: '05-Jun-2026' },
+  { id: 'rec1-c', name: 'Safari Adventure Package', image: 'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&q=80&w=800', hotel: 'Jetwing Yala', offerType: 'Package', audience: 'German Guests', status: 'AI Recommended', revenueImpact: 'LKR 4.2M', performance: '-', dateCreated: '01-Jul-2026' },
+  { id: 'rec2-c', name: 'Wellness Retreat Package', image: 'https://images.unsplash.com/photo-1544161515-4af6b1d4640b?auto=format&fit=crop&q=80&w=800', hotel: 'Jetwing Vil Uyana', offerType: 'Wellness', audience: 'Repeat Guests', status: 'AI Recommended', revenueImpact: 'LKR 2.8M', performance: '-', dateCreated: '01-Jul-2026' },
+  { id: 'rec3-c', name: 'Family Escape Bundle', image: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&q=80&w=800', hotel: 'Jetwing St. Andrew’s', offerType: 'Family', audience: 'Indian Markets', status: 'AI Recommended', revenueImpact: 'LKR 3.5M', performance: '-', dateCreated: '01-Jul-2026' },
+  { id: 'rec4-c', name: 'Whale Watching Experience', image: 'https://images.unsplash.com/photo-1568430462989-44163eb1752f?auto=format&fit=crop&q=80&w=800', hotel: 'Jetwing Lighthouse', offerType: 'Excursion', audience: 'UK Market', status: 'AI Recommended', revenueImpact: 'LKR 1.9M', performance: '-', dateCreated: '01-Jul-2026' },
+  { id: 'rec5-c', name: 'Luxury Villa Upgrade', image: 'https://images.unsplash.com/photo-1540553016722-983e48a2cd10?auto=format&fit=crop&q=80&w=800', hotel: 'Jetwing Vil Uyana', offerType: 'Luxury', audience: 'High Spenders', status: 'AI Recommended', revenueImpact: 'LKR 5.1M', performance: '-', dateCreated: '01-Jul-2026' },
+  { id: 'rec6-c', name: 'Cultural Discovery Package', image: 'https://images.unsplash.com/photo-1582650625119-3a31f8fa2699?auto=format&fit=crop&q=80&w=800', hotel: 'Jetwing Lake', offerType: 'Cultural', audience: 'French Guests', status: 'AI Recommended', revenueImpact: 'LKR 2.4M', performance: '-', dateCreated: '01-Jul-2026' },
 ];
 
 export default function OfferIntelligence() {
@@ -198,6 +205,7 @@ export default function OfferIntelligence() {
   const [campaigns, setCampaigns] = useState<Campaign[]>(INITIAL_CAMPAIGNS);
   const [selectedOffer, setSelectedOffer] = useState<Recommendation | null>(null);
   const [activeDashboardTab, setActiveDashboardTab] = useState('All Campaigns');
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Status');
   const [typeFilter, setTypeFilter] = useState('All Types');
@@ -226,19 +234,22 @@ export default function OfferIntelligence() {
 
   const filteredCampaigns = useMemo(() => {
     return campaigns.filter(c => {
-      const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           c.hotel.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           c.audience.toLowerCase().includes(searchQuery.toLowerCase());
+      const searchLower = searchQuery.toLowerCase().trim();
+      const matchesSearch = searchLower === '' ||
+                           c.name.toLowerCase().includes(searchLower) ||
+                           c.hotel.toLowerCase().includes(searchLower) ||
+                           c.audience.toLowerCase().includes(searchLower) ||
+                           c.offerType.toLowerCase().includes(searchLower);
 
       const matchesStatus = statusFilter === 'All Status' || c.status === statusFilter;
-      const matchesType = typeFilter === 'All Types' || c.offerType === typeFilter;
+      const matchesType = typeFilter === 'Offer Type' || c.offerType === typeFilter;
 
       const matchesTab = activeDashboardTab === 'All Campaigns' ||
                         (activeDashboardTab === 'Drafts' && c.status === 'Draft') ||
                         (activeDashboardTab === 'Active' && c.status === 'Active') ||
                         (activeDashboardTab === 'Scheduled' && c.status === 'Scheduled') ||
                         (activeDashboardTab === 'Completed' && c.status === 'Completed') ||
-                        (activeDashboardTab === 'AI Recommendations'); // This tab would ideally show something else, but for now we'll keep all or filtered
+                        (activeDashboardTab === 'AI Recommendations' && c.status === 'AI Recommended');
 
       return matchesSearch && matchesStatus && matchesType && matchesTab;
     });
@@ -257,6 +268,7 @@ export default function OfferIntelligence() {
       const newCampaign: Campaign = {
         id: `c${Date.now()}`,
         name: selectedOffer.title,
+        image: selectedOffer.image,
         hotel: selectedOffer.hotels[0],
         offerType: 'Package',
         audience: selectedOffer.target,
@@ -272,7 +284,7 @@ export default function OfferIntelligence() {
   };
 
   const renderDashboard = () => (
-    <div className="space-y-12 animate-in fade-in duration-700 pb-20">
+    <div className="space-y-12 animate-in fade-in duration-700 pb-20 font-sans">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-4xl font-serif font-medium" style={{ color: COLORS.text }}>Offer Intelligence</h1>
@@ -280,13 +292,13 @@ export default function OfferIntelligence() {
         </div>
         <button
           onClick={() => {
-            const el = document.getElementById('ai-recommendation-section');
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
+            const el = document.getElementById('ai-section');
+            el?.scrollIntoView({ behavior: 'smooth' });
           }}
           className="px-8 py-4 rounded-full text-white font-semibold shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
           style={{ background: COLORS.goldGradient }}
         >
-          <Plus className="w-5 h-5" /> Start AI Recommendation
+          <Sparkles className="w-5 h-5" /> Start AI Recommendation
         </button>
       </div>
 
@@ -313,113 +325,84 @@ export default function OfferIntelligence() {
         ))}
       </div>
 
-      {/* AI RECOMMENDATION SECTION (Primary) */}
-      <div id="ai-recommendation-section" className="space-y-8 py-4">
-        <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-white ring-1 ring-slate-100 relative">
-          <div className="absolute top-0 left-0 right-0 h-1.5" style={{ background: COLORS.goldGradient }} />
-          <CardContent className="p-10 md:p-14">
-            <div className="flex flex-col md:flex-row justify-between gap-12">
-              <div className="flex-1 space-y-8">
-                <div>
-                  <h2 className="text-3xl font-serif font-bold text-slate-900 mb-3">Generate AI Recommendations</h2>
-                  <p className="text-slate-500 text-lg font-light leading-relaxed">
-                    Generate personalized offers using guest behavior, booking history, hotel performance, seasonality and market trends.
-                  </p>
-                </div>
+      {/* AI Recommendation Section - PRIMARY FOCUS */}
+      <section id="ai-section" className="scroll-mt-10">
+        <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-white ring-1 ring-slate-100">
+           <div className="h-1.5" style={{ background: COLORS.goldGradient }} />
+           <CardContent className="p-8 md:p-12">
+              <div className="flex flex-col lg:flex-row gap-12">
+                <div className="flex-1 space-y-6">
+                  <div>
+                    <h2 className="text-3xl font-serif font-bold text-slate-900">Generate AI Recommendations</h2>
+                    <p className="mt-2 text-slate-500">Generate personalized offers using guest behavior, booking history, hotel performance, seasonality and market trends.</p>
+                  </div>
 
-                <div className="space-y-6">
-                  <div className="space-y-3">
-                    <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Business Goal</label>
+                  <div className="space-y-4">
+                    <label className="text-sm font-bold uppercase tracking-[0.2em] text-slate-400">Business Goal</label>
                     <textarea
-                      placeholder="e.g., Increase occupancy at Jetwing Yala during August."
                       value={businessGoal}
                       onChange={(e) => setBusinessGoal(e.target.value)}
-                      className="w-full p-5 rounded-2xl border border-slate-200 focus:border-amber-400 focus:ring-4 focus:ring-amber-50 outline-none transition-all min-h-[100px] text-lg font-light shadow-sm"
+                      placeholder="e.g., Increase occupancy at Jetwing Yala during August."
+                      className="w-full p-5 rounded-2xl border-slate-200 focus:border-amber-400 focus:ring-4 focus:ring-amber-50 outline-none transition-all min-h-[100px] text-lg font-light bg-slate-50/50"
+                      style={{ border: '1px solid #E2E8F0' }}
                     />
                   </div>
-                  <div className="space-y-3">
-                    <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Additional Instructions</label>
+
+                  <div className="space-y-4">
+                    <label className="text-sm font-bold uppercase tracking-[0.2em] text-slate-400">Additional Instructions</label>
                     <textarea
-                      placeholder="e.g., Focus on German guests. Avoid high discount campaigns."
                       value={additionalContext}
                       onChange={(e) => setAdditionalContext(e.target.value)}
-                      className="w-full p-5 rounded-2xl border border-slate-200 focus:border-amber-400 focus:ring-4 focus:ring-amber-50 outline-none transition-all min-h-[100px] text-lg font-light shadow-sm"
+                      placeholder="e.g., Focus on German guests. Avoid high discount campaigns."
+                      className="w-full p-5 rounded-2xl border-slate-200 focus:border-amber-400 focus:ring-4 focus:ring-amber-50 outline-none transition-all min-h-[100px] text-lg font-light bg-slate-50/50"
+                      style={{ border: '1px solid #E2E8F0' }}
                     />
                   </div>
+
                   <Button
                     onClick={handleGenerateRecommendations}
                     disabled={isGenerating}
-                    className="w-full md:w-auto px-12 py-7 rounded-2xl text-lg font-bold flex gap-3 shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all"
+                    className="w-full lg:w-auto px-12 py-7 rounded-2xl text-lg font-bold flex gap-3 shadow-xl hover:shadow-2xl transition-all"
                     style={{ background: COLORS.goldGradient }}
                   >
                     {isGenerating ? <RefreshCcw className="w-6 h-6 animate-spin" /> : <Sparkles className="w-6 h-6" />}
                     Generate Recommendations
                   </Button>
                 </div>
-              </div>
 
-              <div className="hidden lg:flex flex-1 items-center justify-center">
-                 <div className="relative w-full max-w-sm">
-                    <div className="absolute -top-12 -right-12 w-64 h-64 bg-amber-100/30 rounded-full blur-3xl" />
-                    <div className="absolute -bottom-12 -left-12 w-64 h-64 bg-slate-100/50 rounded-full blur-3xl" />
-                    <div className="relative bg-white p-8 rounded-[2rem] shadow-xl border border-slate-50 space-y-6">
-                       <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-full bg-slate-900 flex items-center justify-center"><Sparkles className="w-6 h-6 text-amber-400" /></div>
-                          <p className="font-bold">AI Strategist Ready</p>
-                       </div>
-                       <div className="space-y-3">
-                          {[1,2,3].map(i => <div key={i} className="h-2 bg-slate-50 rounded-full w-full" />)}
-                          <div className="h-2 bg-slate-50 rounded-full w-2/3" />
-                       </div>
+                <div className="lg:w-1/3 bg-slate-50 rounded-[2rem] p-8 flex flex-col justify-center border border-slate-100">
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700">
+                        <CheckCircle2 className="w-5 h-5" />
+                      </div>
+                      <p className="text-sm font-medium text-slate-700">AI-analyzed guest segments</p>
                     </div>
-                 </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700">
+                        <CheckCircle2 className="w-5 h-5" />
+                      </div>
+                      <p className="text-sm font-medium text-slate-700">Predictive occupancy modelling</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700">
+                        <CheckCircle2 className="w-5 h-5" />
+                      </div>
+                      <p className="text-sm font-medium text-slate-700">Real-time market trend parity</p>
+                    </div>
+                    <div className="pt-6 border-t border-slate-200">
+                       <p className="text-xs text-slate-400 leading-relaxed italic">
+                         "AI is helping marketing managers discover profitable offers before creating campaigns."
+                       </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </CardContent>
+           </CardContent>
         </Card>
+      </section>
 
-        {/* AI RECOMMENDATION RESULTS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-8">
-           {offers.map(rec => (
-             <Card key={rec.id} className="border-none shadow-lg hover:shadow-2xl transition-all rounded-[2.5rem] overflow-hidden group bg-white ring-1 ring-slate-100">
-               <div className="relative h-56 overflow-hidden">
-                 <img src={rec.image} alt={rec.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                 <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl flex items-center gap-1.5">
-                   <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                   <span className="text-xs font-bold text-slate-900">{rec.confidence}% Match</span>
-                 </div>
-                 <div className="absolute bottom-4 left-6 right-6">
-                   <h3 className="text-xl font-serif font-bold text-white mb-1">{rec.title}</h3>
-                   <div className="flex items-center gap-3">
-                     <span className="text-[10px] font-bold uppercase tracking-widest text-amber-300">{rec.target}</span>
-                   </div>
-                 </div>
-               </div>
-               <CardContent className="p-8">
-                  <div className="grid grid-cols-2 gap-4 mb-8">
-                     <div className="p-3 rounded-2xl bg-slate-50">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Occupancy</p>
-                        <p className="text-lg font-bold text-green-600">{rec.occupancyImpact}</p>
-                     </div>
-                     <div className="p-3 rounded-2xl bg-slate-50">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Revenue</p>
-                        <p className="text-lg font-bold" style={{ color: COLORS.primary }}>{rec.revenueImpact}</p>
-                     </div>
-                  </div>
-                  <p className="text-sm text-slate-500 leading-relaxed mb-8 line-clamp-2">{rec.reason}</p>
-                  <div className="flex flex-col xl:flex-row gap-2">
-                     <Button variant="outline" className="flex-1 rounded-xl py-3 border-slate-200 hover:bg-slate-50 text-xs font-bold" onClick={() => { setSelectedOffer(rec); setCurrentStep(3); }}>View Details</Button>
-                     <Button variant="outline" className="flex-1 rounded-xl py-3 border-slate-200 hover:bg-slate-50 text-xs font-bold" onClick={() => { setSelectedOffer(rec); setCurrentStep(6); }}>Generate Audience</Button>
-                     <Button className="flex-1 rounded-xl py-3 shadow-lg text-xs font-bold" style={{ background: COLORS.secondary }} onClick={() => { setSelectedOffer(rec); setCurrentStep(6); }}>Create Campaign</Button>
-                  </div>
-               </CardContent>
-             </Card>
-           ))}
-        </div>
-      </div>
-
-      <div className="space-y-8 pt-12">
+      <div className="space-y-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <h2 className="text-3xl font-serif font-bold">Campaign Management</h2>
           <div className="flex bg-slate-50 p-1.5 rounded-2xl ring-1 ring-slate-100">
@@ -436,7 +419,7 @@ export default function OfferIntelligence() {
         </div>
 
         {/* Search & Filter Bar */}
-        <div className="flex flex-col md:flex-row items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+        <div className="flex flex-col md:flex-row items-center gap-4 bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
           <div className="relative flex-1 w-full">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
@@ -444,121 +427,165 @@ export default function OfferIntelligence() {
               placeholder="Search Campaign..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-50 border-none rounded-xl py-3 pl-12 pr-4 text-sm focus:ring-2 focus:ring-amber-200 outline-none transition-all"
+              className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-11 pr-4 text-sm focus:ring-2 focus:ring-amber-200 outline-none transition-all"
             />
           </div>
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="relative flex-1 md:w-48">
-              <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="relative flex-1 md:w-44">
+              <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
               <select
                 value={dateRange}
                 onChange={(e) => setDateRange(e.target.value)}
-                className="w-full bg-slate-50 border-none rounded-xl py-3 pl-12 pr-8 text-sm focus:ring-2 focus:ring-amber-200 outline-none appearance-none transition-all"
+                className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-8 text-xs font-medium focus:ring-2 focus:ring-amber-200 outline-none appearance-none transition-all"
               >
-                <option>All Time</option>
+                <option>Date Range</option>
                 <option>Last 7 Days</option>
                 <option>Last 30 Days</option>
                 <option>Next 30 Days</option>
               </select>
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             </div>
-            <div className="relative flex-1 md:w-48">
-              <Layers className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            <div className="relative flex-1 md:w-40">
+              <Layers className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="w-full bg-slate-50 border-none rounded-xl py-3 pl-12 pr-8 text-sm focus:ring-2 focus:ring-amber-200 outline-none appearance-none transition-all"
+                className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-8 text-xs font-medium focus:ring-2 focus:ring-amber-200 outline-none appearance-none transition-all"
               >
-                <option>All Types</option>
+                <option>Offer Type</option>
                 <option>Package</option>
                 <option>Wellness</option>
                 <option>Family</option>
                 <option>Excursion</option>
+                <option>Luxury</option>
+                <option>Cultural</option>
               </select>
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             </div>
-            <div className="relative flex-1 md:w-48">
-              <Target className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            <div className="relative flex-1 md:w-40">
+              <Target className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full bg-slate-50 border-none rounded-xl py-3 pl-12 pr-8 text-sm focus:ring-2 focus:ring-amber-200 outline-none appearance-none transition-all"
+                className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-8 text-xs font-medium focus:ring-2 focus:ring-amber-200 outline-none appearance-none transition-all"
               >
                 <option>All Status</option>
                 <option>Active</option>
                 <option>Scheduled</option>
                 <option>Draft</option>
                 <option>Completed</option>
+                <option>AI Recommended</option>
               </select>
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             </div>
             <Button
               variant="outline"
-              className="rounded-xl p-3 border-slate-100 hover:bg-slate-50"
+              className="rounded-xl p-2.5 border-slate-100 hover:bg-slate-50 h-[38px] flex items-center gap-2 text-xs font-bold"
               onClick={() => setShowFilters(!showFilters)}
             >
-              <Filter className="w-5 h-5 text-slate-600" />
+              <Filter className="w-4 h-4 text-slate-600" />
+              Filters
             </Button>
           </div>
         </div>
 
-        <Card className="border-none shadow-sm ring-1 ring-slate-100 overflow-visible">
+        <Card className="border-none shadow-sm ring-1 ring-slate-100 overflow-visible bg-white rounded-2xl">
           <CardContent className="p-0">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50/50 border-b border-slate-100">
-                  <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Campaign</th>
-                  <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Hotel</th>
-                  <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Status</th>
-                  <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Revenue</th>
-                  <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {filteredCampaigns.map(c => (
-                  <tr key={c.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="p-5">
-                      <p className="font-bold text-slate-900 text-sm group-hover:text-amber-700 transition-colors">{c.name}</p>
-                      <p className="text-[10px] text-slate-400 uppercase tracking-tighter">{c.audience}</p>
-                    </td>
-                    <td className="p-5 text-sm text-slate-600 font-medium">{c.hotel}</td>
-                    <td className="p-5">
-                      <span className={cn(
-                        "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                        c.status === 'Active' ? "bg-green-50 text-green-700 ring-1 ring-green-100" :
-                        c.status === 'Scheduled' ? "bg-blue-50 text-blue-700 ring-1 ring-blue-100" :
-                        c.status === 'Draft' ? "bg-slate-50 text-slate-600 ring-1 ring-slate-100" :
-                        "bg-amber-50 text-amber-700 ring-1 ring-amber-100"
-                      )}>{c.status}</span>
-                    </td>
-                    <td className="p-5">
-                      <p className="text-sm font-bold text-slate-900">{c.revenueImpact}</p>
-                      <p className="text-[10px] text-green-600 font-bold">{c.performance} Performance</p>
-                    </td>
-                    <td className="p-5 text-right">
-                      <div className="flex items-center justify-end gap-2 relative">
-                        <button
-                          onClick={() => setShowCampaignDetails(c)}
-                          className="p-2.5 hover:bg-white rounded-xl text-slate-400 hover:text-amber-600 hover:shadow-sm transition-all"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <div className="relative">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[1000px]">
+                <thead>
+                  <tr className="bg-slate-50/80 border-b border-slate-100">
+                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-slate-500">Campaign Details</th>
+                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-slate-500">Property</th>
+                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-slate-500">Offer Type</th>
+                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-slate-500">Status</th>
+                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-slate-500">Financial Impact</th>
+                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-slate-500 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {filteredCampaigns.map(c => (
+                    <tr key={c.id} className="hover:bg-slate-50/50 transition-colors group">
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 shadow-md border border-slate-100 bg-slate-200">
+                             <img src={c.image} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                          </div>
+                          <div className="space-y-0.5">
+                            <p className="font-bold text-slate-900 text-[15px] group-hover:text-amber-800 transition-colors">{c.name}</p>
+                            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-tight">{c.audience}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-2">
+                           <Briefcase className="w-4 h-4 text-slate-300" />
+                           <span className="text-sm text-slate-600 font-semibold">{c.hotel}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                         <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wide">
+                           {c.offerType}
+                         </span>
+                      </td>
+                      <td className="px-6 py-5">
+                        <span className={cn(
+                          "px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1.5",
+                          c.status === 'Active' ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100" :
+                          c.status === 'Scheduled' ? "bg-sky-50 text-sky-700 ring-1 ring-sky-100" :
+                          c.status === 'Draft' ? "bg-slate-100 text-slate-600 ring-1 ring-slate-200" :
+                          c.status === 'AI Recommended' ? "bg-amber-50 text-amber-700 ring-1 ring-amber-100" :
+                          "bg-slate-50 text-slate-400 ring-1 ring-slate-100"
+                        )}>
+                          <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse",
+                            c.status === 'Active' ? "bg-emerald-500" :
+                            c.status === 'Scheduled' ? "bg-sky-500" :
+                            c.status === 'AI Recommended' ? "bg-amber-500" : "bg-slate-400"
+                          )} />
+                          {c.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="space-y-0.5">
+                          <p className="text-[15px] font-bold text-slate-900">{c.revenueImpact}</p>
+                          <p className="text-[10px] text-emerald-600 font-bold uppercase">{c.performance} ROI</p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5 text-right">
+                        <div className="flex items-center justify-end gap-3 relative">
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenActionMenuId(openActionMenuId === c.id ? null : c.id);
+                            onClick={() => {
+                              if (c.status === 'AI Recommended') {
+                                const recId = c.id.replace('-c', '');
+                                const rec = MOCK_RECOMMENDATIONS.find(r => r.id === recId);
+                                if (rec) {
+                                  setSelectedOffer(rec);
+                                  setCurrentStep(3);
+                                }
+                              } else {
+                                setShowCampaignDetails(c);
+                              }
                             }}
-                            className={cn(
-                              "p-2.5 hover:bg-white rounded-xl text-slate-400 hover:text-slate-900 hover:shadow-sm transition-all",
-                              openActionMenuId === c.id && "bg-white text-slate-900 shadow-sm"
-                            )}
+                            className="p-2.5 hover:bg-white rounded-xl text-slate-400 hover:text-amber-600 hover:shadow-md transition-all border border-transparent hover:border-slate-100"
                           >
-                            <MoreVertical className="w-4 h-4" />
+                            <Eye className="w-4.5 h-4.5" />
                           </button>
+                          <div className="relative">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenActionMenuId(openActionMenuId === c.id ? null : c.id);
+                              }}
+                              className={cn(
+                                "p-2.5 hover:bg-white rounded-xl text-slate-400 hover:text-slate-900 hover:shadow-md transition-all border border-transparent hover:border-slate-100",
+                                openActionMenuId === c.id && "bg-white text-slate-900 shadow-md border-slate-100"
+                              )}
+                            >
+                              <MoreVertical className="w-4.5 h-4.5" />
+                            </button>
 
-                          {openActionMenuId === c.id && (
-                            <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl ring-1 ring-slate-100 z-50 py-3 animate-in fade-in zoom-in-95 duration-200">
+                            {openActionMenuId === c.id && (
+                              <div className="absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-2xl ring-1 ring-black/5 z-[60] py-3 animate-in fade-in zoom-in-95 duration-200">
                                {[
                                  { label: 'Edit Campaign', icon: Briefcase },
                                  { label: 'Generate Audience', icon: Users },
@@ -588,7 +615,8 @@ export default function OfferIntelligence() {
                 ))}
               </tbody>
             </table>
-          </CardContent>
+          </div>
+        </CardContent>
         </Card>
       </div>
     </div>
@@ -767,7 +795,7 @@ export default function OfferIntelligence() {
         <Card className="w-full max-w-5xl max-h-[90vh] overflow-hidden shadow-2xl rounded-[2.5rem] bg-white border-none relative ring-1 ring-slate-100">
           <div className="absolute top-0 left-0 right-0 h-2" style={{ background: COLORS.goldGradient }} />
           <button
-            onClick={() => setCurrentStep(0)}
+            onClick={() => setCurrentStep(offers.some(o => o.id === selectedOffer.id) && currentStep === 3 ? 2 : 0)}
             className="absolute top-8 right-8 p-3 hover:bg-slate-100 rounded-full transition-all text-slate-400 hover:text-slate-900 z-10"
           >
             <X className="w-6 h-6" />
@@ -1007,7 +1035,7 @@ export default function OfferIntelligence() {
   }
 
   return (
-    <div className="max-w-[1400px] mx-auto p-4 md:p-10 min-h-screen bg-white">
+    <div className="max-w-[1400px] mx-auto p-4 md:p-10 min-h-screen bg-white selection:bg-amber-100 selection:text-amber-900">
       {renderDashboard()}
       {ViewDetailsModal()}
       {CampaignDetailsModal()}
