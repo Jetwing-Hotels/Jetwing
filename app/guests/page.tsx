@@ -40,7 +40,7 @@ const guestProfiles = [
 ];
 
 export default function GuestsPage() {
-  const [view, setView] = useState<'analytics' | 'filtering' | 'recommendations'>('analytics');
+  const [view, setView] = useState<'analytics' | 'filtering' | 'recommendations'>('filtering');
 
   useEffect(() => {
     const handleViewChange = (event: Event) => {

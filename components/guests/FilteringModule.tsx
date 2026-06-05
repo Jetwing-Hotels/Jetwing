@@ -179,13 +179,20 @@ export default function FilteringModule() {
 
         {/* Date Picker */}
         <div className="relative w-64">
-          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: COLORS.muted }} />
+          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10 pointer-events-none" style={{ color: COLORS.muted }} />
+          <input
+            type="text"
+            readOnly
+            placeholder="Select Date"
+            value={formatDate(selectedDate)}
+            className="w-full pl-10 pr-4 py-2 rounded-lg border outline-none focus:ring-2 transition-all cursor-pointer bg-white"
+            style={{ borderColor: COLORS.border }}
+          />
           <input
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-lg border outline-none focus:ring-2 transition-all"
-            style={{ borderColor: COLORS.border }}
+            className="absolute inset-0 opacity-0 cursor-pointer"
           />
         </div>
 
@@ -248,8 +255,8 @@ export default function FilteringModule() {
                   { label: 'Guest Name', key: 'name' },
                   { label: 'Country', key: 'country' },
                   { label: 'Hotel', key: 'hotel' },
-                  { label: 'Check-in', key: 'checkIn' },
-                  { label: 'Check-out', key: 'checkOut' },
+                  { label: 'Check-in Date', key: 'checkIn' },
+                  { label: 'Check-out Date', key: 'checkOut' },
                   { label: 'Booking Source', key: 'bookingSource' },
                   { label: 'Future Booking', key: 'futureBooking' },
                   { label: 'Guest Type', key: 'guestType' },
@@ -411,7 +418,7 @@ export default function FilteringModule() {
                       className="w-full flex items-center justify-between p-4 bg-slate-50 font-semibold text-sm uppercase tracking-wider"
                       style={{ color: COLORS.text }}
                     >
-                      {key.replace(/([A-Z])/g, ' $1').trim()}
+                      {key.replace(/([A-Z])/g, ' $1').trim().toUpperCase()}
                       <ChevronDown className={cn("w-4 h-4 transition-transform", isExpanded ? "" : "-rotate-90")} />
                     </button>
                     {isExpanded && (
