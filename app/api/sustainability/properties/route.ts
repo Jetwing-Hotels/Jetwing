@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function GET() {
   try {
+    const supabaseAdmin = createAdminClient();
     const { data, error } = await supabaseAdmin
       .from('properties')
       .select('property_id, property_code, property_name, location_city, location_region, room_count')
