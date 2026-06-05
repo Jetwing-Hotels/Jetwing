@@ -149,7 +149,7 @@ export default function FilteringModule() {
     bookingSource: ["Direct Website", "Booking.com", "Agoda", "Expedia", "Travel Agent"],
     servicesUsed: ["Safari", "Spa", "Dining", "Transfers", "Excursions", "Wellness", "Whale Watching"],
     futureBooking: ["Yes", "No"],
-    guestType: ["New Guest", "Repeat Guest", "VIP Guest"],
+    guestType: ["New", "Repeat", "VIP"],
     roomCategory: ["Standard", "Deluxe", "Suite", "Luxury Villa"],
     loyaltyStatus: ["Bronze", "Silver", "Gold", "Platinum"],
   };

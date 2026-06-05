@@ -11,7 +11,7 @@ export const PASSENGERS = [
     "checkOut": "2026-07-24",
     "bookingSource": "Booking.com",
     "futureBooking": "No",
-    "guestType": "VIP Guest",
+    "guestType": "VIP",
     "roomCategory": "Deluxe",
     "loyaltyStatus": "Bronze",
     "servicesUsed": [
@@ -55,7 +55,7 @@ export const PASSENGERS = [
     "checkOut": "2026-07-17",
     "bookingSource": "Expedia",
     "futureBooking": "No",
-    "guestType": "VIP Guest",
+    "guestType": "VIP",
     "roomCategory": "Suite",
     "loyaltyStatus": "Bronze",
     "servicesUsed": [
@@ -99,7 +99,7 @@ export const PASSENGERS = [
     "checkOut": "2026-07-18",
     "bookingSource": "Booking.com",
     "futureBooking": "Yes",
-    "guestType": "New Guest",
+    "guestType": "NEW",
     "roomCategory": "Standard",
     "loyaltyStatus": "Platinum",
     "servicesUsed": [
@@ -144,7 +144,7 @@ export const PASSENGERS = [
     "checkOut": "2026-07-22",
     "bookingSource": "Agoda",
     "futureBooking": "Yes",
-    "guestType": "VIP Guest",
+    "guestType": "VIP",
     "roomCategory": "Luxury Villa",
     "loyaltyStatus": "Platinum",
     "servicesUsed": [
@@ -187,7 +187,7 @@ export const PASSENGERS = [
     "checkOut": "2026-07-23",
     "bookingSource": "Agoda",
     "futureBooking": "No",
-    "guestType": "VIP Guest",
+    "guestType": "VIP",
     "roomCategory": "Deluxe",
     "loyaltyStatus": "Bronze",
     "servicesUsed": [
@@ -230,7 +230,7 @@ export const PASSENGERS = [
     "checkOut": "2026-09-11",
     "bookingSource": "Booking.com",
     "futureBooking": "Yes",
-    "guestType": "Repeat Guest",
+    "guestType": "Repeat",
     "roomCategory": "Deluxe",
     "loyaltyStatus": "Silver",
     "servicesUsed": [
@@ -273,7 +273,7 @@ export const PASSENGERS = [
     "checkOut": "2026-09-19",
     "bookingSource": "Agoda",
     "futureBooking": "No",
-    "guestType": "Repeat Guest",
+    "guestType": "Repeat",
     "roomCategory": "Deluxe",
     "loyaltyStatus": "Silver",
     "servicesUsed": [
@@ -317,7 +317,7 @@ export const PASSENGERS = [
     "checkOut": "2026-01-23",
     "bookingSource": "Travel Agent",
     "futureBooking": "Yes",
-    "guestType": "Repeat Guest",
+    "guestType": "Repeat",
     "roomCategory": "Deluxe",
     "loyaltyStatus": "Silver",
     "servicesUsed": [
@@ -359,7 +359,7 @@ export const PASSENGERS = [
     "checkOut": "2026-08-16",
     "bookingSource": "Expedia",
     "futureBooking": "No",
-    "guestType": "Repeat Guest",
+    "guestType": "Repeat",
     "roomCategory": "Standard",
     "loyaltyStatus": "Bronze",
     "servicesUsed": [
@@ -402,7 +402,7 @@ export const PASSENGERS = [
     "checkOut": "2026-08-10",
     "bookingSource": "Direct Website",
     "futureBooking": "Yes",
-    "guestType": "Repeat Guest",
+    "guestType": "Repeat",
     "roomCategory": "Luxury Villa",
     "loyaltyStatus": "Silver",
     "servicesUsed": [
@@ -444,7 +444,7 @@ export const PASSENGERS = [
     "checkOut": "2026-09-10",
     "bookingSource": "Direct Website",
     "futureBooking": "Yes",
-    "guestType": "New Guest",
+    "guestType": "NEW",
     "roomCategory": "Suite",
     "loyaltyStatus": "Silver",
     "servicesUsed": [
@@ -489,7 +489,7 @@ export const PASSENGERS = [
     "checkOut": "2026-01-07",
     "bookingSource": "Agoda",
     "futureBooking": "No",
-    "guestType": "VIP Guest",
+    "guestType": "VIP",
     "roomCategory": "Deluxe",
     "loyaltyStatus": "Platinum",
     "servicesUsed": [
@@ -534,7 +534,7 @@ export const PASSENGERS = [
     "checkOut": "2026-03-25",
     "bookingSource": "Agoda",
     "futureBooking": "No",
-    "guestType": "VIP Guest",
+    "guestType": "VIP",
     "roomCategory": "Luxury Villa",
     "loyaltyStatus": "Bronze",
     "servicesUsed": [
@@ -576,7 +576,7 @@ export const PASSENGERS = [
     "checkOut": "2026-12-30",
     "bookingSource": "Expedia",
     "futureBooking": "No",
-    "guestType": "New Guest",
+    "guestType": "NEW",
     "roomCategory": "Standard",
     "loyaltyStatus": "Platinum",
     "servicesUsed": [
@@ -620,7 +620,7 @@ export const PASSENGERS = [
     "checkOut": "2026-11-07",
     "bookingSource": "Booking.com",
     "futureBooking": "Yes",
-    "guestType": "Repeat Guest",
+    "guestType": "Repeat",
     "roomCategory": "Luxury Villa",
     "loyaltyStatus": "Gold",
     "servicesUsed": [
@@ -665,7 +665,7 @@ export const PASSENGERS = [
     "checkOut": "2026-09-02",
     "bookingSource": "Travel Agent",
     "futureBooking": "No",
-    "guestType": "Repeat Guest",
+    "guestType": "Repeat",
     "roomCategory": "Standard",
     "loyaltyStatus": "Bronze",
     "servicesUsed": [
@@ -710,7 +710,7 @@ export const PASSENGERS = [
     "checkOut": "2026-03-28",
     "bookingSource": "Expedia",
     "futureBooking": "Yes",
-    "guestType": "New Guest",
+    "guestType": "NEW",
     "roomCategory": "Luxury Villa",
     "loyaltyStatus": "Bronze",
     "servicesUsed": [
@@ -755,7 +755,7 @@ export const PASSENGERS = [
     "checkOut": "2026-07-09",
     "bookingSource": "Expedia",
     "futureBooking": "No",
-    "guestType": "New Guest",
+    "guestType": "NEW",
     "roomCategory": "Standard",
     "loyaltyStatus": "Bronze",
     "servicesUsed": [
@@ -798,7 +798,7 @@ export const PASSENGERS = [
     "checkOut": "2026-11-05",
     "bookingSource": "Travel Agent",
     "futureBooking": "Yes",
-    "guestType": "New Guest",
+    "guestType": "NEW",
     "roomCategory": "Deluxe",
     "loyaltyStatus": "Gold",
     "servicesUsed": [
@@ -841,7 +841,7 @@ export const PASSENGERS = [
     "checkOut": "2026-08-20",
     "bookingSource": "Booking.com",
     "futureBooking": "No",
-    "guestType": "Repeat Guest",
+    "guestType": "Repeat",
     "roomCategory": "Standard",
     "loyaltyStatus": "Bronze",
     "servicesUsed": [
@@ -883,7 +883,7 @@ export const PASSENGERS = [
     "checkOut": "2026-09-15",
     "bookingSource": "Travel Agent",
     "futureBooking": "No",
-    "guestType": "Repeat Guest",
+    "guestType": "Repeat",
     "roomCategory": "Suite",
     "loyaltyStatus": "Silver",
     "servicesUsed": [
@@ -928,7 +928,7 @@ export const PASSENGERS = [
     "checkOut": "2026-06-17",
     "bookingSource": "Travel Agent",
     "futureBooking": "No",
-    "guestType": "VIP Guest",
+    "guestType": "VIP",
     "roomCategory": "Standard",
     "loyaltyStatus": "Silver",
     "servicesUsed": [
@@ -971,7 +971,7 @@ export const PASSENGERS = [
     "checkOut": "2026-04-09",
     "bookingSource": "Agoda",
     "futureBooking": "Yes",
-    "guestType": "Repeat Guest",
+    "guestType": "Repeat",
     "roomCategory": "Luxury Villa",
     "loyaltyStatus": "Gold",
     "servicesUsed": [
@@ -1014,7 +1014,7 @@ export const PASSENGERS = [
     "checkOut": "2026-04-25",
     "bookingSource": "Expedia",
     "futureBooking": "No",
-    "guestType": "New Guest",
+    "guestType": "NEW",
     "roomCategory": "Suite",
     "loyaltyStatus": "Bronze",
     "servicesUsed": [
@@ -1058,7 +1058,7 @@ export const PASSENGERS = [
     "checkOut": "2026-02-04",
     "bookingSource": "Direct Website",
     "futureBooking": "Yes",
-    "guestType": "New Guest",
+    "guestType": "NEW",
     "roomCategory": "Standard",
     "loyaltyStatus": "Silver",
     "servicesUsed": [
@@ -1100,7 +1100,7 @@ export const PASSENGERS = [
     "checkOut": "2026-01-15",
     "bookingSource": "Booking.com",
     "futureBooking": "Yes",
-    "guestType": "Repeat Guest",
+    "guestType": "Repeat",
     "roomCategory": "Standard",
     "loyaltyStatus": "Silver",
     "servicesUsed": [
@@ -1145,7 +1145,7 @@ export const PASSENGERS = [
     "checkOut": "2026-01-16",
     "bookingSource": "Expedia",
     "futureBooking": "Yes",
-    "guestType": "New Guest",
+    "guestType": "NEW",
     "roomCategory": "Suite",
     "loyaltyStatus": "Platinum",
     "servicesUsed": [
@@ -1188,7 +1188,7 @@ export const PASSENGERS = [
     "checkOut": "2026-01-31",
     "bookingSource": "Agoda",
     "futureBooking": "No",
-    "guestType": "VIP Guest",
+    "guestType": "VIP",
     "roomCategory": "Standard",
     "loyaltyStatus": "Platinum",
     "servicesUsed": [
@@ -1231,7 +1231,7 @@ export const PASSENGERS = [
     "checkOut": "2026-03-05",
     "bookingSource": "Expedia",
     "futureBooking": "Yes",
-    "guestType": "VIP Guest",
+    "guestType": "VIP",
     "roomCategory": "Suite",
     "loyaltyStatus": "Bronze",
     "servicesUsed": [
@@ -1276,7 +1276,7 @@ export const PASSENGERS = [
     "checkOut": "2026-10-21",
     "bookingSource": "Expedia",
     "futureBooking": "Yes",
-    "guestType": "VIP Guest",
+    "guestType": "VIP",
     "roomCategory": "Suite",
     "loyaltyStatus": "Gold",
     "servicesUsed": [
@@ -1319,7 +1319,7 @@ export const PASSENGERS = [
     "checkOut": "2026-09-14",
     "bookingSource": "Travel Agent",
     "futureBooking": "No",
-    "guestType": "VIP Guest",
+    "guestType": "VIP",
     "roomCategory": "Suite",
     "loyaltyStatus": "Silver",
     "servicesUsed": [
@@ -1364,7 +1364,7 @@ export const PASSENGERS = [
     "checkOut": "2026-11-02",
     "bookingSource": "Agoda",
     "futureBooking": "Yes",
-    "guestType": "New Guest",
+    "guestType": "NEW",
     "roomCategory": "Deluxe",
     "loyaltyStatus": "Bronze",
     "servicesUsed": [
@@ -1406,7 +1406,7 @@ export const PASSENGERS = [
     "checkOut": "2026-03-28",
     "bookingSource": "Travel Agent",
     "futureBooking": "No",
-    "guestType": "Repeat Guest",
+    "guestType": "Repeat",
     "roomCategory": "Deluxe",
     "loyaltyStatus": "Bronze",
     "servicesUsed": [
@@ -1449,7 +1449,7 @@ export const PASSENGERS = [
     "checkOut": "2026-07-08",
     "bookingSource": "Travel Agent",
     "futureBooking": "Yes",
-    "guestType": "New Guest",
+    "guestType": "NEW",
     "roomCategory": "Suite",
     "loyaltyStatus": "Platinum",
     "servicesUsed": [
@@ -1491,7 +1491,7 @@ export const PASSENGERS = [
     "checkOut": "2026-12-28",
     "bookingSource": "Booking.com",
     "futureBooking": "Yes",
-    "guestType": "New Guest",
+    "guestType": "NEW",
     "roomCategory": "Luxury Villa",
     "loyaltyStatus": "Silver",
     "servicesUsed": [
@@ -1535,7 +1535,7 @@ export const PASSENGERS = [
     "checkOut": "2026-03-11",
     "bookingSource": "Agoda",
     "futureBooking": "Yes",
-    "guestType": "New Guest",
+    "guestType": "NEW",
     "roomCategory": "Deluxe",
     "loyaltyStatus": "Silver",
     "servicesUsed": [
@@ -1578,7 +1578,7 @@ export const PASSENGERS = [
     "checkOut": "2026-02-22",
     "bookingSource": "Travel Agent",
     "futureBooking": "Yes",
-    "guestType": "Repeat Guest",
+    "guestType": "Repeat",
     "roomCategory": "Standard",
     "loyaltyStatus": "Silver",
     "servicesUsed": [
@@ -1623,7 +1623,7 @@ export const PASSENGERS = [
     "checkOut": "2026-06-24",
     "bookingSource": "Expedia",
     "futureBooking": "Yes",
-    "guestType": "VIP Guest",
+    "guestType": "VIP",
     "roomCategory": "Luxury Villa",
     "loyaltyStatus": "Platinum",
     "servicesUsed": [
@@ -1666,7 +1666,7 @@ export const PASSENGERS = [
     "checkOut": "2026-10-01",
     "bookingSource": "Travel Agent",
     "futureBooking": "No",
-    "guestType": "New Guest",
+    "guestType": "NEW",
     "roomCategory": "Luxury Villa",
     "loyaltyStatus": "Gold",
     "servicesUsed": [
@@ -1708,7 +1708,7 @@ export const PASSENGERS = [
     "checkOut": "2026-09-22",
     "bookingSource": "Direct Website",
     "futureBooking": "No",
-    "guestType": "VIP Guest",
+    "guestType": "VIP",
     "roomCategory": "Standard",
     "loyaltyStatus": "Bronze",
     "servicesUsed": [
@@ -1751,7 +1751,7 @@ export const PASSENGERS = [
     "checkOut": "2026-12-16",
     "bookingSource": "Booking.com",
     "futureBooking": "Yes",
-    "guestType": "New Guest",
+    "guestType": "NEW",
     "roomCategory": "Luxury Villa",
     "loyaltyStatus": "Bronze",
     "servicesUsed": [
@@ -1795,7 +1795,7 @@ export const PASSENGERS = [
     "checkOut": "2026-09-09",
     "bookingSource": "Agoda",
     "futureBooking": "Yes",
-    "guestType": "New Guest",
+    "guestType": "NEW",
     "roomCategory": "Suite",
     "loyaltyStatus": "Silver",
     "servicesUsed": [
@@ -1840,7 +1840,7 @@ export const PASSENGERS = [
     "checkOut": "2026-12-19",
     "bookingSource": "Expedia",
     "futureBooking": "Yes",
-    "guestType": "Repeat Guest",
+    "guestType": "Repeat",
     "roomCategory": "Deluxe",
     "loyaltyStatus": "Gold",
     "servicesUsed": [
@@ -1882,7 +1882,7 @@ export const PASSENGERS = [
     "checkOut": "2026-06-13",
     "bookingSource": "Agoda",
     "futureBooking": "No",
-    "guestType": "Repeat Guest",
+    "guestType": "Repeat",
     "roomCategory": "Luxury Villa",
     "loyaltyStatus": "Silver",
     "servicesUsed": [
@@ -1927,7 +1927,7 @@ export const PASSENGERS = [
     "checkOut": "2026-01-13",
     "bookingSource": "Booking.com",
     "futureBooking": "No",
-    "guestType": "Repeat Guest",
+    "guestType": "Repeat",
     "roomCategory": "Suite",
     "loyaltyStatus": "Gold",
     "servicesUsed": [
@@ -1969,7 +1969,7 @@ export const PASSENGERS = [
     "checkOut": "2026-06-04",
     "bookingSource": "Agoda",
     "futureBooking": "Yes",
-    "guestType": "New Guest",
+    "guestType": "NEW",
     "roomCategory": "Suite",
     "loyaltyStatus": "Platinum",
     "servicesUsed": [
@@ -2012,7 +2012,7 @@ export const PASSENGERS = [
     "checkOut": "2026-02-23",
     "bookingSource": "Booking.com",
     "futureBooking": "No",
-    "guestType": "New Guest",
+    "guestType": "NEW",
     "roomCategory": "Suite",
     "loyaltyStatus": "Bronze",
     "servicesUsed": [
@@ -2057,7 +2057,7 @@ export const PASSENGERS = [
     "checkOut": "2026-02-03",
     "bookingSource": "Travel Agent",
     "futureBooking": "Yes",
-    "guestType": "New Guest",
+    "guestType": "NEW",
     "roomCategory": "Standard",
     "loyaltyStatus": "Platinum",
     "servicesUsed": [
@@ -2101,7 +2101,7 @@ export const PASSENGERS = [
     "checkOut": "2026-03-15",
     "bookingSource": "Booking.com",
     "futureBooking": "Yes",
-    "guestType": "Repeat Guest",
+    "guestType": "Repeat",
     "roomCategory": "Standard",
     "loyaltyStatus": "Gold",
     "servicesUsed": [
@@ -2144,7 +2144,7 @@ export const PASSENGERS = [
     "checkOut": "2026-04-11",
     "bookingSource": "Expedia",
     "futureBooking": "Yes",
-    "guestType": "New Guest",
+    "guestType": "NEW",
     "roomCategory": "Luxury Villa",
     "loyaltyStatus": "Bronze",
     "servicesUsed": [
