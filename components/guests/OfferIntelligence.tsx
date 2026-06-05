@@ -44,7 +44,22 @@ const COLORS = {
   error: '#ef4444',
 };
 
-type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9; // 9 is Final Summary
+type Step = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9; // 0 is Dashboard, 9 is Final Summary
+
+interface Campaign {
+  id: string;
+  name: string;
+  hotel: string;
+  date: string;
+  status: 'Active' | 'Draft' | 'Completed';
+  revenueImpact: string;
+}
+
+const INITIAL_CAMPAIGNS: Campaign[] = [
+  { id: 'c1', name: 'Safari Adventure', hotel: 'Jetwing Yala', date: '15-May-2026', status: 'Active', revenueImpact: '+LKR 4.2M' },
+  { id: 'c2', name: 'Wellness Retreat', hotel: 'Jetwing Blue', date: '10-May-2026', status: 'Completed', revenueImpact: '+LKR 2.8M' },
+  { id: 'c3', name: 'Coastal Escape', hotel: 'Jetwing Lighthouse', date: '01-May-2026', status: 'Draft', revenueImpact: '+LKR 1.5M' },
+];
 
 interface Offer {
   id: string;
@@ -108,7 +123,8 @@ const MOCK_OFFERS: Offer[] = [
 ];
 
 export default function OfferIntelligence() {
-  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [currentStep, setCurrentStep] = useState<number>(0);
+  const [campaigns, setCampaigns] = useState<Campaign[]>(INITIAL_CAMPAIGNS);
   const [businessGoal, setBusinessGoal] = useState('Increase occupancy at Jetwing Yala during August');
   const [additionalContext, setAdditionalContext] = useState('German summer holidays approaching.');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -163,18 +179,109 @@ export default function OfferIntelligence() {
     setSelectedGuests(topMatchingGuests.map(g => g.id));
   };
 
-  const renderStepHeader = (title: string, subtitle: string) => (
-    <div className="mb-8">
-      <h1 className="text-3xl font-bold tracking-tight" style={{ color: COLORS.text }}>{title}</h1>
-      <p className="mt-1" style={{ color: COLORS.muted }}>{subtitle}</p>
+  const renderStepHeader = (title: string, subtitle: string, showDashboardButton = false) => (
+    <div className="mb-8 flex justify-between items-start">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight" style={{ color: COLORS.text }}>{title}</h1>
+        <p className="mt-1" style={{ color: COLORS.muted }}>{subtitle}</p>
+      </div>
+      {showDashboardButton && (
+        <Button variant="ghost" size="sm" onClick={() => setCurrentStep(0)} className="flex gap-2">
+          <X className="w-4 h-4" /> Exit to Dashboard
+        </Button>
+      )}
     </div>
   );
+
+  // Step 0: Dashboard
+  if (currentStep === 0) {
+    return (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="flex justify-between items-end">
+          {renderStepHeader('Offer Intelligence', 'AI-Powered Offer Recommendations & Campaign Management', false)}
+          <Button
+            onClick={() => setCurrentStep(1)}
+            className="mb-8 py-6 px-6 rounded-xl flex gap-2 text-lg shadow-lg hover:shadow-xl transition-all"
+            style={{ backgroundColor: COLORS.secondary }}
+          >
+            <Plus className="w-5 h-5" /> Start AI Recommendation
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            { label: 'Total Revenue Generated', value: 'LKR 12.4M', icon: DollarSign, color: COLORS.primary },
+            { label: 'Avg. Conversion Rate', value: '18.4%', icon: TrendingUp, color: COLORS.accent },
+            { label: 'Active Campaigns', value: '4', icon: Target, color: COLORS.secondary },
+          ].map((stat) => (
+            <Card key={stat.label}>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-2xl" style={{ backgroundColor: `${stat.color}15` }}>
+                    <stat.icon className="w-6 h-6" style={{ color: stat.color }} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider" style={{ color: COLORS.muted }}>{stat.label}</p>
+                    <p className="text-2xl font-black" style={{ color: COLORS.text }}>{stat.value}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <Card>
+          <CardHeader className="border-b" style={{ borderColor: COLORS.border }}>
+            <div className="flex justify-between items-center">
+              <CardTitle>Recent Campaigns</CardTitle>
+              <Button variant="ghost" size="sm" className="text-xs">View All</Button>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b" style={{ borderColor: COLORS.border, backgroundColor: '#FAFAFA' }}>
+                    <th className="p-4 text-xs font-bold uppercase tracking-widest" style={{ color: COLORS.muted }}>Campaign Name</th>
+                    <th className="p-4 text-xs font-bold uppercase tracking-widest" style={{ color: COLORS.muted }}>Hotel</th>
+                    <th className="p-4 text-xs font-bold uppercase tracking-widest" style={{ color: COLORS.muted }}>Date</th>
+                    <th className="p-4 text-xs font-bold uppercase tracking-widest" style={{ color: COLORS.muted }}>Status</th>
+                    <th className="p-4 text-xs font-bold uppercase tracking-widest text-right" style={{ color: COLORS.muted }}>Revenue Impact</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y" style={{ borderColor: COLORS.border }}>
+                  {campaigns.map((campaign) => (
+                    <tr key={campaign.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="p-4 font-bold">{campaign.name}</td>
+                      <td className="p-4 text-sm">{campaign.hotel}</td>
+                      <td className="p-4 text-sm">{campaign.date}</td>
+                      <td className="p-4 text-sm">
+                        <span className={cn(
+                          "px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter",
+                          campaign.status === 'Active' ? "bg-green-100 text-green-700" :
+                          campaign.status === 'Draft' ? "bg-amber-100 text-amber-700" :
+                          "bg-slate-100 text-slate-700"
+                        )}>
+                          {campaign.status}
+                        </span>
+                      </td>
+                      <td className="p-4 text-sm font-bold text-right" style={{ color: COLORS.primary }}>{campaign.revenueImpact}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Step 1: Generate Offer Ideas
   if (currentStep === 1) {
     return (
-      <div className="max-w-3xl mx-auto space-y-8">
-        {renderStepHeader('Offer Intelligence', 'AI-Powered Offer Recommendations')}
+      <div className="max-w-3xl mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+        {renderStepHeader('Offer Intelligence', 'AI-Powered Offer Recommendations', true)}
 
         <Card>
           <CardHeader className="border-b" style={{ borderColor: COLORS.border }}>
@@ -240,9 +347,9 @@ export default function OfferIntelligence() {
   // Step 2-5: AI Recommended Offers (with details, financials, refine)
   if (currentStep === 2) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-8 animate-in fade-in duration-500">
         <div className="flex items-center justify-between">
-          {renderStepHeader('AI Recommended Offers', 'Based on your business context and real-time market data.')}
+          {renderStepHeader('AI Recommended Offers', 'Based on your business context and real-time market data.', true)}
           <Button variant="outline" onClick={() => setCurrentStep(1)} className="flex gap-2">
             <ArrowLeft className="w-4 h-4" /> Back to Context
           </Button>
@@ -499,9 +606,9 @@ export default function OfferIntelligence() {
   // Step 6: Generate Guest Audience
   if (currentStep === 6) {
     return (
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-4xl mx-auto space-y-8 animate-in slide-in-from-right-4 duration-500">
         <div className="flex items-center justify-between">
-          {renderStepHeader('Generate Guest Audience', 'AI Targeting Engine identifies the best match for your offer.')}
+          {renderStepHeader('Generate Guest Audience', 'AI Targeting Engine identifies the best match for your offer.', true)}
           <Button variant="outline" onClick={() => setCurrentStep(2)}>Back to Offers</Button>
         </div>
 
@@ -565,11 +672,12 @@ export default function OfferIntelligence() {
   // Step 7-8: Generate Email & SMS
   if (currentStep === 7 || currentStep === 8) {
     return (
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-4xl mx-auto space-y-8 animate-in slide-in-from-right-4 duration-500">
         <div className="flex items-center justify-between">
           {renderStepHeader(
             currentStep === 7 ? 'Generate Email Template' : 'Generate SMS Template',
-            'Personalized messaging based on offer and audience insights.'
+            'Personalized messaging based on offer and audience insights.',
+            true
           )}
           <div className="flex gap-2">
              <Button variant="outline" onClick={() => setCurrentStep(currentStep === 7 ? 6 : 7)}>
@@ -687,8 +795,8 @@ export default function OfferIntelligence() {
   // Step 9: Final Approval Screen
   if (currentStep === 9) {
     return (
-      <div className="max-w-3xl mx-auto space-y-8">
-        {renderStepHeader('Campaign Summary', 'Review and approve your personalized marketing campaign.')}
+      <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in duration-500">
+        {renderStepHeader('Campaign Summary', 'Review and approve your personalized marketing campaign.', true)}
 
         <Card className="overflow-hidden">
           <CardHeader className="bg-slate-50 border-b" style={{ borderColor: COLORS.border }}>
@@ -729,9 +837,45 @@ export default function OfferIntelligence() {
              <div className="pt-8 border-t space-y-4" style={{ borderColor: COLORS.border }}>
                 <p className="text-sm font-medium" style={{ color: COLORS.muted }}>Schedule Campaign</p>
                 <div className="flex gap-3">
-                   <Button variant="outline" className="flex-1 py-6">Save Draft</Button>
+                   <Button
+                    variant="outline"
+                    className="flex-1 py-6"
+                    onClick={() => {
+                      if (selectedOffer) {
+                        const newCampaign: Campaign = {
+                          id: `c${Date.now()}`,
+                          name: selectedOffer.title,
+                          hotel: selectedOffer.suggestedHotels[0],
+                          date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-'),
+                          status: 'Draft',
+                          revenueImpact: selectedOffer.financialPrediction.revenueImpact
+                        };
+                        setCampaigns([newCampaign, ...campaigns]);
+                      }
+                      setCurrentStep(0);
+                    }}
+                   >
+                    Save Draft
+                   </Button>
                    <Button variant="outline" className="flex-1 py-6">Schedule for Later</Button>
-                   <Button className="flex-[2] py-6 text-xl rounded-xl flex gap-2" style={{ backgroundColor: COLORS.secondary }}>
+                   <Button
+                    className="flex-[2] py-6 text-xl rounded-xl flex gap-2"
+                    style={{ backgroundColor: COLORS.secondary }}
+                    onClick={() => {
+                      if (selectedOffer) {
+                        const newCampaign: Campaign = {
+                          id: `c${Date.now()}`,
+                          name: selectedOffer.title,
+                          hotel: selectedOffer.suggestedHotels[0],
+                          date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-'),
+                          status: 'Active',
+                          revenueImpact: selectedOffer.financialPrediction.revenueImpact
+                        };
+                        setCampaigns([newCampaign, ...campaigns]);
+                      }
+                      setCurrentStep(0);
+                    }}
+                   >
                      Send Now <Send className="w-5 h-5" />
                    </Button>
                 </div>
@@ -741,11 +885,11 @@ export default function OfferIntelligence() {
 
         <div className="flex justify-center">
            <button
-            onClick={() => setCurrentStep(1)}
+            onClick={() => setCurrentStep(0)}
             className="text-sm font-bold underline flex items-center gap-1"
             style={{ color: COLORS.muted }}
            >
-             <ArrowLeft className="w-4 h-4" /> Restart Process
+             <ArrowLeft className="w-4 h-4" /> Back to Dashboard
            </button>
         </div>
       </div>

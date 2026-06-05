@@ -24,7 +24,7 @@ const guestProfiles = [
     email: 'j.wilson@example.com', 
     tier: 'Gold', 
     totalSpend: 420000, 
-    lastStay: '2024-03-20', 
+    lastStay: '2024-None-20',
     preference: 'Vegan menu, Spa regular',
     sentiment: 0.85
   },
@@ -34,7 +34,7 @@ const guestProfiles = [
     email: 'elena.r@example.com', 
     tier: 'Silver', 
     totalSpend: 150000, 
-    lastStay: '2023-11-05', 
+    lastStay: '2023-None-05',
     preference: 'Quiet room, Early check-in',
     sentiment: 0.78
   },
