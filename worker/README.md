@@ -39,71 +39,50 @@ celery -A celery_app beat   --loglevel=info        # terminal 2 (needs a Redis r
 
 ---
 
-# 🧪 Model-training guide (for the ML engineer)
+# 🤖 The scoring model (integrated)
 
-You own the model; this worker owns the data plumbing. The **only thing we must agree on is the feature contract** below — get that right and your endpoint drops straight in.
+The worker is wired to **[`HiruniAyesha/jetwing-customer-ranker`](https://huggingface.co/HiruniAyesha/jetwing-customer-ranker)** (`handler_v2`). The model scores customers as a **0–100 percentile rank** (mean 50; top 10% ≥ 90) using its own internal `log1p` + QuantileTransformer pipeline — so the worker sends **raw** feature values.
 
-### 1. What to build
-A supervised regressor (XGBoost or LightGBM recommended) that outputs a **0–100 composite customer-value score**. Suggested target label = a blend of: future-booking probability (next 6 months) + expected LTV increment + inverse churn risk, derived from historical `bookings`. Normalise the target to 0–100.
+### Feature contract (matches `feature_columns_v2.json` and `scoring_model.build_vector()`)
+18 raw features, in this exact order. The handler indexes them positionally, so order is load-bearing.
 
-### 2. Feature contract — MUST MATCH `scoring_model.py`
-16 features, **this exact order and these transforms** (the worker builds vectors this way in `build_vector()`):
-
-| idx | feature | transform |
+| idx | feature | from `customer_features` / derivation |
 | --- | --- | --- |
-| 0 | recency_days | raw |
-| 1 | frequency_total | raw |
-| 2 | frequency_12m | raw |
-| 3 | monetary_total_lkr | **log1p** |
-| 4 | monetary_avg_per_stay_lkr | raw |
-| 5 | monetary_12m_lkr | raw |
-| 6 | avg_length_of_stay | raw |
-| 7 | avg_lead_time_days | raw |
-| 8 | direct_booking_ratio | 0–1 |
-| 9 | cancellation_ratio | 0–1 |
-| 10 | avg_satisfaction_score | missing → **-1.0** sentinel |
-| 11 | property_diversity_score | 0–1 |
-| 12 | luxury_reserve_visits | raw |
-| 13 | eco_engagement_flag | 0/1 |
-| 14 | high_season_preference | 0/1 |
-| 15 | domestic_guest | 0/1 |
+| 0 | recency_days | recency_days |
+| 1 | frequency_total | frequency_total |
+| 2 | monetary_total | monetary_total_lkr |
+| 3 | monetary_avg_per_stay | monetary_avg_per_stay_lkr |
+| 4 | avg_length_of_stay | avg_length_of_stay |
+| 5 | avg_lead_time_days | avg_lead_time_days |
+| 6 | cancellation_ratio | cancellation_ratio |
+| 7 | direct_booking_ratio | direct_booking_ratio |
+| 8 | is_repeated_guest | `1 if frequency_total > 1` |
+| 9 | prev_completed_bookings | frequency_total |
+| 10 | avg_special_requests | `0.0` (not tracked yet) |
+| 11 | luxury_reserve_visits | luxury_reserve_visits |
+| 12 | premium_hotel_visits | premium_hotel_visits |
+| 13 | luxury_affinity_ratio | `luxury / (luxury + premium)` |
+| 14 | eco_engagement_flag | 0/1 |
+| 15 | avg_adr | `monetary_avg_per_stay_lkr / max(1, avg_length_of_stay)` |
+| 16 | high_season_preference | 0/1 |
+| 17 | domestic_guest | 0/1 |
 
-Pull the training table straight from Supabase: `select * from customer_features` (apply the same log1p / sentinel in your training featurizer).
+> Five fields (`is_repeated_guest`, `prev_completed_bookings`, `avg_special_requests`, `luxury_affinity_ratio`, `avg_adr`) aren't stored directly, so the worker derives them. To improve fidelity later, add real `avg_special_requests` and `avg_adr` columns to `customer_features` (compute them in `refresh_customer_features()`), then update `build_vector()`.
 
-### 3. Endpoint I/O contract
-Deploy as a **HuggingFace Dedicated Inference Endpoint** with a custom handler. Request/response:
-
+### Endpoint I/O
 ```
-POST  { "inputs": [[f0, f1, ..., f15], ...] }     # batch of up to 500 vectors
-200   { "scores": [88.4, 71.2, ...] }             # 0–100, same order as inputs
-```
-
-Minimal `handler.py` skeleton for the endpoint:
-
-```python
-# handler.py — HuggingFace Inference Endpoint custom handler
-import numpy as np, joblib
-
-class EndpointHandler:
-    def __init__(self, path="."):
-        self.model = joblib.load(f"{path}/model.joblib")  # your trained XGB/LGBM
-
-    def __call__(self, data):
-        X = np.array(data["inputs"], dtype=float)          # (n, 16)
-        preds = self.model.predict(X)                      # raw model output
-        scores = np.clip(preds, 0, 100).round(2)           # ensure 0–100
-        return {"scores": scores.tolist()}
+POST  { "inputs": [[...18 floats...], ...] }
+200   { "scores": [87.3, ...], "top_10_pct": [true, ...] }   # worker uses "scores"
 ```
 
-Package: `model.joblib` + `handler.py` + `requirements.txt` (xgboost/lightgbm, scikit-learn, joblib, numpy) in the HF model repo.
+### Deploy + connect (3 steps)
+1. On the model page → **Deploy → Inference Endpoints** → create a **Dedicated** endpoint (the custom `handler_v2.py` runs there; the serverless API won't, since there's no standard pipeline). Copy the endpoint URL.
+2. Put the values in `worker/.env`:
+   ```
+   HF_SCORING_ENDPOINT=https://xxxx.endpoints.huggingface.cloud
+   HF_API_TOKEN=hf_...
+   HF_MODEL_VERSION=jetwing-customer-ranker-v2
+   ```
+3. `docker compose restart worker beat` — `score_customers` now batches real vectors to the endpoint and writes tiers (Platinum ≥80, Gold ≥60, Silver ≥40, else Standard) into `customer_scores`. No code change needed.
 
-### 4. Hand-off
-Give me three values and I'll flip the worker from heuristic to your model — no code change:
-
-```
-HF_SCORING_ENDPOINT=https://xxxx.endpoints.huggingface.cloud
-HF_API_TOKEN=hf_...
-HF_MODEL_VERSION=customer-scorer-v1      # written into customer_scores.model_version
-```
-
-That's it — set them in `worker/.env`, restart, and `score_customers` will batch your vectors to the endpoint and persist the tiers (Platinum ≥80, Gold ≥60, Silver ≥40, else Standard).
+Until step 2 is done, scoring uses the local RFM heuristic so the pipeline still runs.

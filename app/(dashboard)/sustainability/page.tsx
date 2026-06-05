@@ -2,11 +2,13 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { ChevronDown, Download, Calendar, Building2 } from 'lucide-react';
-import { C, PROPERTIES, DATE_RANGES } from '@/components/sustainability/data';
+import { C, DATE_RANGES } from '@/components/sustainability/data';
 import { exportSustainabilityReport } from '@/components/sustainability/exportReport';
 import Overview from '@/components/sustainability/views/Overview';
 import { ClimateAction, EnergyManagement, WaterManagement, WasteManagement, Biodiversity } from '@/components/sustainability/views/Environment';
 import { CommunityImpact, EsgReports, RiskManagement, SustainabilityGoals } from '@/components/sustainability/views/SocialGov';
+import { getEnvironmentDashboardRows, getProperties } from '@/lib/sustainability/api';
+import type { PropertyOption, SustainabilityEnvironmentRow } from '@/lib/sustainability/types';
 
 type ViewId = 'overview' | 'climate' | 'energy' | 'water' | 'waste' | 'biodiversity' | 'community' | 'esg' | 'risk' | 'goals';
 
@@ -61,7 +63,11 @@ function Dropdown({ icon: Icon, options, value, onChange, width = 200 }: {
 
 export default function SustainabilityPage() {
   const [view, setView] = useState<ViewId>('overview');
-  const [property, setProperty] = useState<string>(PROPERTIES[0]);
+  const [properties, setProperties] = useState<PropertyOption[]>([]);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>('all');
+  const [environmentRows, setEnvironmentRows] = useState<SustainabilityEnvironmentRow[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [range, setRange] = useState<string>(DATE_RANGES[2]);
   const exportRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -76,6 +82,52 @@ export default function SustainabilityPage() {
     return () => window.removeEventListener('sustainabilityViewChange', handleViewChange);
   }, []);
 
+  useEffect(() => {
+    async function loadInitialData() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [propertyRows, dashboardRows] = await Promise.all([
+          getProperties(),
+          getEnvironmentDashboardRows(),
+        ]);
+
+        setProperties(propertyRows);
+        setEnvironmentRows(dashboardRows);
+      } catch (err) {
+        console.error(err);
+        setError('Failed to load sustainability data from Supabase.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadInitialData();
+  }, []);
+
+  const propertyOptions = ['All Properties', ...properties.map((p) => p.property_name)];
+
+  const selectedPropertyName =
+    selectedPropertyId === 'all'
+      ? 'All Properties'
+      : properties.find((p) => p.property_id === selectedPropertyId)?.property_name ?? 'All Properties';
+
+  function handlePropertyChange(propertyName: string) {
+    if (propertyName === 'All Properties') {
+      setSelectedPropertyId('all');
+      return;
+    }
+
+    const matchedProperty = properties.find((p) => p.property_name === propertyName);
+    setSelectedPropertyId(matchedProperty?.property_id ?? 'all');
+  }
+
+  const visibleRows =
+    selectedPropertyId === 'all'
+      ? environmentRows
+      : environmentRows.filter((row) => row.property_id === selectedPropertyId);
+
   const handleExportReport = async () => {
     if (!exportRef.current || isExporting) {
       return;
@@ -86,7 +138,7 @@ export default function SustainabilityPage() {
     try {
       await exportSustainabilityReport(exportRef.current, {
         title: `JetMind Sustainability Report - ${viewLabels[view]}`,
-        subtitle: `Property: ${property} | Period: ${range}`,
+        subtitle: `Property: ${selectedPropertyName} | Period: ${range}`,
         generatedAt: `Generated: ${new Date().toLocaleString()}`,
         filename: `jetmind-sustainability-${view}.pdf`,
       });
@@ -96,12 +148,28 @@ export default function SustainabilityPage() {
   };
 
   const render = () => {
+    if (loading) {
+      return (
+        <div className="p-6 text-sm" style={{ color: C.subtext }}>
+          Loading sustainability data...
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="p-6 text-sm text-red-600">
+          {error}
+        </div>
+      );
+    }
+
     switch (view) {
       case 'overview': return <Overview />;
-      case 'climate': return <ClimateAction />;
-      case 'energy': return <EnergyManagement />;
-      case 'water': return <WaterManagement />;
-      case 'waste': return <WasteManagement />;
+      case 'climate': return <ClimateAction rows={visibleRows} />;
+      case 'energy': return <EnergyManagement rows={visibleRows} />;
+      case 'water': return <WaterManagement rows={visibleRows} />;
+      case 'waste': return <WasteManagement rows={visibleRows} />;
       case 'biodiversity': return <Biodiversity />;
       case 'community': return <CommunityImpact />;
       case 'esg': return <EsgReports />;
@@ -115,7 +183,7 @@ export default function SustainabilityPage() {
       {/* Top filter bar — fixed */}
       <div className="fixed top-0 left-64 right-0 z-20 flex items-center justify-between gap-4 px-8 py-3 border-b bg-white" style={{ borderColor: C.border }}>
         <div className="flex items-center gap-3">
-          <Dropdown icon={Building2} options={PROPERTIES} value={property} onChange={setProperty} width={210} />
+          <Dropdown icon={Building2} options={propertyOptions} value={selectedPropertyName} onChange={handlePropertyChange} width={210} />
           <Dropdown icon={Calendar} options={DATE_RANGES} value={range} onChange={setRange} width={180} />
         </div>
         <button

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { AlertTriangle } from "lucide-react";
+import type { SustainabilityEnvironmentRow } from "@/lib/sustainability/types";
 import {
   C,
   carbonMonthly,
@@ -40,8 +41,80 @@ import {
   PageHeader,
 } from "../ui";
 
+function n(value: number | null | undefined) {
+  return Number(value ?? 0);
+}
+
+function monthLabel(year: number, month: number) {
+  return new Date(year, month - 1, 1).toLocaleString('en', {
+    month: 'short',
+  });
+}
+
+function sumRows(
+  rows: SustainabilityEnvironmentRow[],
+  key: keyof SustainabilityEnvironmentRow,
+) {
+  return rows.reduce((total, row) => total + n(row[key] as number | null), 0);
+}
+
+function latestRow(rows: SustainabilityEnvironmentRow[]) {
+  return [...rows].sort((a, b) => {
+    if (a.report_year !== b.report_year) {
+      return b.report_year - a.report_year;
+    }
+
+    return b.report_month - a.report_month;
+  })[0];
+}
+
+function noDataMessage(title: string, subtitle: string) {
+  return (
+    <Card className="p-6">
+      <p className="text-sm font-semibold" style={{ color: C.text }}>
+        No sustainability data found for this selection.
+      </p>
+      <p className="text-xs mt-1" style={{ color: C.subtext }}>
+        {title} · {subtitle}
+      </p>
+    </Card>
+  );
+}
+
 // ── Climate Action ───────────────────────────────────────────────────────────
-export function ClimateAction() {
+export function ClimateAction({ rows }: { rows: SustainabilityEnvironmentRow[] }) {
+  if (rows.length === 0) {
+    return (
+      <div>
+        <PageHeader
+          title="Climate Action"
+          subtitle="Carbon emissions analytics and scope breakdown"
+        />
+        {noDataMessage("Climate Action", "Add rows to sustainability_environment_dashboard_monthly")}
+      </div>
+    );
+  }
+
+  const totalScope1 = rows.reduce((total, row) => total + n(row.scope1_tco2e), 0);
+  const totalScope2 = rows.reduce((total, row) => total + n(row.scope2_tco2e), 0);
+  const totalEmissions = rows.reduce((total, row) => total + n(row.total_scope1_2_tco2e), 0);
+  const latest = latestRow(rows);
+  const missingFactorCount = rows.reduce(
+    (total, row) => total + n(row.missing_emission_factor_count),
+    0,
+  );
+
+  const carbonMonthlyFromSupabase = rows.map((row) => ({
+    month: monthLabel(row.report_year, row.report_month),
+    scope1: n(row.scope1_tco2e),
+    scope2: n(row.scope2_tco2e),
+  }));
+
+  const scopeSplitFromSupabase = [
+    { name: 'Scope 1', value: Number(totalScope1.toFixed(2)), color: C.accent },
+    { name: 'Scope 2', value: Number(totalScope2.toFixed(2)), color: C.blue },
+  ];
+
   return (
     <div>
       <section data-export-block="true">
@@ -52,26 +125,26 @@ export function ClimateAction() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <StatTile
             label="Total Emissions"
-            value="9,257 tCO₂"
-            sub="−18.2% YoY"
+            value={`${totalEmissions.toFixed(1)} tCO₂e`}
+            sub="Scope 1 + Scope 2"
             accent={C.primary}
           />
           <StatTile
             label="Scope 1 — Direct"
-            value="2,353 tCO₂"
-            sub="25% of total"
+            value={`${totalScope1.toFixed(1)} tCO₂e`}
+            sub="Direct emissions"
             accent={C.accent}
           />
           <StatTile
             label="Scope 2 — Indirect"
-            value="6,904 tCO₂"
-            sub="75% of total"
+            value={`${totalScope2.toFixed(1)} tCO₂e`}
+            sub="Grid electricity emissions"
             accent={C.blue}
           />
           <StatTile
             label="CO₂ / Guest Night"
-            value="↓19%"
-            sub="Intensity reduction"
+            value={latest?.kgco2e_per_occupied_room == null ? 'N/A' : `${Number(latest.kgco2e_per_occupied_room).toFixed(1)} kg`}
+            sub={missingFactorCount > 0 ? `${missingFactorCount} missing emission factors` : 'Latest available month'}
             accent={C.green}
           />
         </div>
@@ -85,7 +158,7 @@ export function ClimateAction() {
               subtitle="Scope 1 vs Scope 2 (tCO₂)"
             >
               <VBar
-                data={carbonMonthly}
+                data={carbonMonthlyFromSupabase}
                 stacked
                 bars={[
                   { key: "scope1", name: "Scope 1", color: C.accent },
@@ -96,7 +169,7 @@ export function ClimateAction() {
             </ChartCard>
           </div>
           <ChartCard title="Scope Split" subtitle="FY 2024/25 (tCO₂)">
-            <Donut data={scopeSplit} unit=" tCO₂" />
+            <Donut data={scopeSplitFromSupabase} unit=" tCO₂" />
           </ChartCard>
         </div>
       </section>
@@ -126,7 +199,40 @@ export function ClimateAction() {
 }
 
 // ── Energy Management ────────────────────────────────────────────────────────
-export function EnergyManagement() {
+export function EnergyManagement({ rows }: { rows: SustainabilityEnvironmentRow[] }) {
+  if (rows.length === 0) {
+    return (
+      <div>
+        <PageHeader
+          title="Energy Management"
+          subtitle="Electricity consumption and renewable energy share"
+        />
+        {noDataMessage("Energy Management", "Add rows to sustainability_environment_dashboard_monthly")}
+      </div>
+    );
+  }
+
+  const totalEnergy = rows.reduce((total, row) => total + n(row.total_energy_kwh), 0);
+  const renewableEnergy = rows.reduce((total, row) => total + n(row.renewable_energy_kwh), 0);
+  const solarEnergy = rows.reduce((total, row) => total + n(row.solar_pv_kwh), 0);
+  const renewableShare = totalEnergy === 0 ? 0 : (renewableEnergy / totalEnergy) * 100;
+
+  const energyMonthlyFromSupabase = rows.map((row) => ({
+    month: monthLabel(row.report_year, row.report_month),
+    grid: n(row.grid_electricity_kwh) / 1000,
+    solar: n(row.solar_pv_kwh) / 1000,
+  }));
+
+  const renewableMixFromSupabase = [
+    { name: 'Renewable', value: Number(renewableShare.toFixed(1)), color: C.primary },
+    { name: 'Non Renewable', value: Number(Math.max(0, 100 - renewableShare).toFixed(1)), color: C.muted },
+  ];
+
+  const energyByPropertyFromSupabase = rows.map((row) => ({
+    name: row.property_name,
+    value: n(row.total_energy_kwh) / 1000,
+  }));
+
   return (
     <div>
       <section data-export-block="true">
@@ -137,26 +243,26 @@ export function EnergyManagement() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <StatTile
             label="Total Consumption"
-            value="46.1M kWh"
-            sub="−2.2% YoY"
+            value={`${(totalEnergy / 1000).toFixed(1)} MWh`}
+            sub="Selected period"
             accent={C.primary}
           />
           <StatTile
             label="Solar Generated"
-            value="3.44M kWh"
-            sub="+11.6% YoY"
+            value={`${(solarEnergy / 1000).toFixed(1)} MWh`}
+            sub="Solar PV"
             accent={C.accent}
           />
           <StatTile
             label="Renewable Share"
-            value="27%"
-            sub="Target 40% by 2028"
+            value={`${renewableShare.toFixed(1)}%`}
+            sub="Renewable / total energy"
             accent={C.green}
           />
           <StatTile
-            label="Solar Capacity"
-            value="2.6 MW"
-            sub="Across 16 properties"
+            label="Renewable Energy"
+            value={`${(renewableEnergy / 1000).toFixed(1)} MWh`}
+            sub="Solar, biomass, biogas"
             accent={C.blue}
           />
         </div>
@@ -170,7 +276,7 @@ export function EnergyManagement() {
               subtitle="MWh consumed / generated"
             >
               <AreaTrend
-                data={energyMonthly}
+                data={energyMonthlyFromSupabase}
                 series={[
                   { key: "grid", name: "Grid Electricity", color: C.blue },
                   { key: "solar", name: "Solar Generation", color: C.accent },
@@ -182,7 +288,7 @@ export function EnergyManagement() {
             title="Renewable Energy Mix"
             subtitle="Share of total energy"
           >
-            <Donut data={renewableMix} unit="%" />
+            <Donut data={renewableMixFromSupabase} unit="%" />
           </ChartCard>
         </div>
       </section>
@@ -194,7 +300,7 @@ export function EnergyManagement() {
             subtitle="Grid consumption (MWh)"
           >
             <HBar
-              data={energyByHotel}
+              data={energyByPropertyFromSupabase}
               color={C.blue}
               unit=" MWh"
               height={300}
@@ -241,7 +347,46 @@ function StressBar({ index, level }: { index: number; level: string }) {
   );
 }
 
-export function WaterManagement() {
+export function WaterManagement({ rows }: { rows: SustainabilityEnvironmentRow[] }) {
+  if (rows.length === 0) {
+    return (
+      <div>
+        <PageHeader
+          title="Water Management"
+          subtitle="Consumption, recycling and water source split"
+        />
+        {noDataMessage("Water Management", "Add rows to sustainability_environment_dashboard_monthly")}
+      </div>
+    );
+  }
+
+  const totalWater = rows.reduce((total, row) => total + n(row.total_water_l), 0);
+  const recycledWater = rows.reduce((total, row) => {
+    const rowTotalWater = n(row.total_water_l);
+    const rowRecyclingPct = n(row.water_recycling_rate_pct);
+    return total + (rowTotalWater * rowRecyclingPct) / 100;
+  }, 0);
+  const recyclingRate = totalWater === 0 ? 0 : (recycledWater / totalWater) * 100;
+  const latest = latestRow(rows);
+
+  const waterByPropertyFromSupabase = rows.map((row) => ({
+    name: row.property_name,
+    value: n(row.total_water_l) / 1000,
+    saved: (n(row.total_water_l) * n(row.water_recycling_rate_pct)) / 100 / 1000,
+  }));
+
+  const waterSourceSplitFromSupabase = [
+    { name: 'Municipal', value: n(latest?.municipal_share_pct), color: C.blueDark },
+    { name: 'Groundwater', value: n(latest?.groundwater_share_pct), color: C.blue },
+    { name: 'Rainwater', value: n(latest?.rainwater_share_pct), color: C.teal },
+    { name: 'Recycled', value: n(latest?.water_recycling_rate_pct), color: C.primaryLight },
+  ];
+
+  const waterRecyclingTrendFromSupabase = rows.map((row) => ({
+    month: monthLabel(row.report_year, row.report_month),
+    recycled: n(row.water_recycling_rate_pct),
+  }));
+
   return (
     <div>
       <section data-export-block="true">
@@ -252,26 +397,26 @@ export function WaterManagement() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <StatTile
             label="Total Consumption"
-            value="106.5M L"
-            sub="−8.3% YoY"
+            value={`${(totalWater / 1000000).toFixed(2)}M L`}
+            sub="Selected period"
             accent={C.blue}
           />
           <StatTile
             label="Water Recycled"
-            value="28%"
-            sub="+10 pts YoY"
+            value={`${recyclingRate.toFixed(1)}%`}
+            sub="Recycled / total water"
             accent={C.teal}
           />
           <StatTile
-            label="Water / Guest Night"
-            value="1.1 m³"
-            sub="Down from 1.2 m³"
+            label="Water / Occupied Room"
+            value={latest?.water_l_per_occupied_room == null ? 'N/A' : `${Number(latest.water_l_per_occupied_room).toFixed(1)} L`}
+            sub="Latest available month"
             accent={C.green}
           />
           <StatTile
-            label="Wastewater Reused"
-            value="256,600 m³"
-            sub="≈103 Olympic pools"
+            label="Recycled Water"
+            value={`${(recycledWater / 1000).toFixed(1)} m³`}
+            sub="Estimated from monthly records"
             accent={C.primary}
           />
         </div>
@@ -285,7 +430,7 @@ export function WaterManagement() {
               subtitle="Withdrawal (m³) vs savings achieved (m³)"
             >
               <VBar
-                data={waterByHotel}
+                data={waterByPropertyFromSupabase}
                 xKey="name"
                 height={320}
                 bars={[
@@ -297,7 +442,7 @@ export function WaterManagement() {
             </ChartCard>
           </div>
           <ChartCard title="Withdrawal by Source" subtitle="Share of total">
-            <Donut data={waterSourceSplit} unit="%" />
+            <Donut data={waterSourceSplitFromSupabase} unit="%" />
           </ChartCard>
         </div>
       </section>
@@ -309,7 +454,7 @@ export function WaterManagement() {
             subtitle="Recycled share trend (%)"
           >
             <AreaTrend
-              data={waterRecyclingTrend}
+              data={waterRecyclingTrendFromSupabase}
               series={[{ key: "recycled", name: "Recycled %", color: C.teal }]}
               unit="%"
             />
@@ -384,7 +529,38 @@ export function WaterManagement() {
 }
 
 // ── Waste Management ─────────────────────────────────────────────────────────
-export function WasteManagement() {
+export function WasteManagement({ rows }: { rows: SustainabilityEnvironmentRow[] }) {
+  if (rows.length === 0) {
+    return (
+      <div>
+        <PageHeader
+          title="Waste Management"
+          subtitle="Generation, recycling and diversion performance"
+        />
+        {noDataMessage("Waste Management", "Add rows to sustainability_environment_dashboard_monthly")}
+      </div>
+    );
+  }
+
+  const totalWaste = rows.reduce((total, row) => total + n(row.total_waste_kg), 0);
+  const divertedWaste = rows.reduce((total, row) => total + n(row.diverted_kg), 0);
+  const landfillWaste = rows.reduce((total, row) => {
+    return total + (n(row.total_waste_kg) * n(row.landfill_rate_pct)) / 100;
+  }, 0);
+  const diversionRate = totalWaste === 0 ? 0 : (divertedWaste / totalWaste) * 100;
+  const latest = latestRow(rows);
+
+  const wasteDiversionFromSupabase = [
+    { name: 'Diverted', value: divertedWaste / 1000, color: C.primary },
+    { name: 'Landfill', value: landfillWaste / 1000, color: C.red },
+  ];
+
+  const wasteMonthlyFromSupabase = rows.map((row) => ({
+    month: monthLabel(row.report_year, row.report_month),
+    generated: n(row.total_waste_kg) / 1000,
+    recycled: n(row.diverted_kg) / 1000,
+  }));
+
   return (
     <div>
       <section data-export-block="true">
@@ -395,26 +571,26 @@ export function WasteManagement() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <StatTile
             label="Total Waste"
-            value="1,109 t"
-            sub="−12.9% YoY"
+            value={`${(totalWaste / 1000).toFixed(1)} t`}
+            sub="Selected period"
             accent={C.primary}
           />
           <StatTile
             label="Diversion Rate"
-            value="77%"
-            sub="890 t diverted"
+            value={`${diversionRate.toFixed(1)}%`}
+            sub={`${(divertedWaste / 1000).toFixed(1)} t diverted`}
             accent={C.teal}
           />
           <StatTile
             label="To Landfill"
-            value="219 t"
-            sub="Target: 0 by 2030"
+            value={`${(landfillWaste / 1000).toFixed(1)} t`}
+            sub="Landfill waste"
             accent={C.red}
           />
           <StatTile
-            label="Plastic Eliminated"
-            value="6,800 kg"
-            sub="684k glass bottles"
+            label="Recycling Rate"
+            value={latest?.recycling_rate_pct == null ? 'N/A' : `${n(latest.recycling_rate_pct).toFixed(1)}%`}
+            sub="Latest month"
             accent={C.accent}
           />
         </div>
@@ -423,7 +599,7 @@ export function WasteManagement() {
       <section data-export-block="true">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <ChartCard title="Diversion vs Landfill" subtitle="Tonnes">
-            <Donut data={wasteDiversion} unit=" t" />
+            <Donut data={wasteDiversionFromSupabase} unit=" t" />
           </ChartCard>
           <div className="lg:col-span-2">
             <ChartCard title="Treatment Methods" subtitle="By volume (tonnes)">
@@ -437,7 +613,7 @@ export function WasteManagement() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ChartCard title="Generated vs Recycled" subtitle="Monthly (tonnes)">
             <VBar
-              data={wasteMonthly}
+              data={wasteMonthlyFromSupabase}
               bars={[
                 { key: "generated", name: "Generated", color: C.muted },
                 { key: "recycled", name: "Recycled", color: C.primary },

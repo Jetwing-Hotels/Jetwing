@@ -1,0 +1,138 @@
+
+> frontend@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+✓ Ready in 798ms
+
+⨯ ./components/guests/OfferIntelligence.tsx:618:25
+Expected '</', got 'jsx text'
+  [90m616 |[0m               </tbody>
+  [90m617 |[0m             </table>
+[31m[1m>[0m [90m618 |[0m           </[33mCardContent[0m>
+  [90m    |[0m                         [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m619 |[0m         </[33mCard[0m>
+  [90m    |[0m [31m[1m^^^^^^^^[0m
+  [90m620 |[0m       </div>
+  [90m621 |[0m     </div>
+  [90m622 |[0m   );
+
+Parsing ecmascript source code failed
+
+Import traces:
+  Client Component Browser:
+    ./components/guests/OfferIntelligence.tsx [Client Component Browser]
+    ./app/guests/page.tsx [Client Component Browser]
+    ./app/guests/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/guests/OfferIntelligence.tsx [Client Component SSR]
+    ./app/guests/page.tsx [Client Component SSR]
+    ./app/guests/page.tsx [Server Component]
+
+
+ GET /guests 500 in 395ms (next.js: 179ms, application-code: 216ms)
+[browser] Uncaught Error: ./components/guests/OfferIntelligence.tsx:618:25
+Expected '</', got 'jsx text'
+  616 |               </tbody>
+  617 |             </table>
+> 618 |           </CardContent>
+      |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 619 |         </Card>
+      | ^^^^^^^^
+  620 |       </div>
+  621 |     </div>
+  622 |   );
+
+Parsing ecmascript source code failed
+
+Import traces:
+  Client Component Browser:
+    ./components/guests/OfferIntelligence.tsx [Client Component Browser]
+    ./app/guests/page.tsx [Client Component Browser]
+    ./app/guests/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/guests/OfferIntelligence.tsx [Client Component SSR]
+    ./app/guests/page.tsx [Client Component SSR]
+    ./app/guests/page.tsx [Server Component]
+
+
+    at <unknown> (Error: ./components/guests/OfferIntelligence.tsx:618:25)
+    at <unknown> (Error: (./components/guests/OfferIntelligence.tsx:618:25)
+[browser] ./components/guests/OfferIntelligence.tsx:618:25
+Expected '</', got 'jsx text'
+  616 |               </tbody>
+  617 |             </table>
+> 618 |           </CardContent>
+      |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 619 |         </Card>
+      | ^^^^^^^^
+  620 |       </div>
+  621 |     </div>
+  622 |   );
+
+Parsing ecmascript source code failed
+
+Import traces:
+  Client Component Browser:
+    ./components/guests/OfferIntelligence.tsx [Client Component Browser]
+    ./app/guests/page.tsx [Client Component Browser]
+    ./app/guests/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/guests/OfferIntelligence.tsx [Client Component SSR]
+    ./app/guests/page.tsx [Client Component SSR]
+    ./app/guests/page.tsx [Server Component]
+[browser] ./components/guests/OfferIntelligence.tsx:618:25
+Expected '</', got 'jsx text'
+  616 |               </tbody>
+  617 |             </table>
+> 618 |           </CardContent>
+      |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 619 |         </Card>
+      | ^^^^^^^^
+  620 |       </div>
+  621 |     </div>
+  622 |   );
+
+Parsing ecmascript source code failed
+
+Import traces:
+  Client Component Browser:
+    ./components/guests/OfferIntelligence.tsx [Client Component Browser]
+    ./app/guests/page.tsx [Client Component Browser]
+    ./app/guests/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/guests/OfferIntelligence.tsx [Client Component SSR]
+    ./app/guests/page.tsx [Client Component SSR]
+    ./app/guests/page.tsx [Server Component]
+[browser] ./components/guests/OfferIntelligence.tsx:618:25
+Expected '</', got 'jsx text'
+  616 |               </tbody>
+  617 |             </table>
+> 618 |           </CardContent>
+      |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 619 |         </Card>
+      | ^^^^^^^^
+  620 |       </div>
+  621 |     </div>
+  622 |   );
+
+Parsing ecmascript source code failed
+
+Import traces:
+  Client Component Browser:
+    ./components/guests/OfferIntelligence.tsx [Client Component Browser]
+    ./app/guests/page.tsx [Client Component Browser]
+    ./app/guests/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/guests/OfferIntelligence.tsx [Client Component SSR]
+    ./app/guests/page.tsx [Client Component SSR]
+    ./app/guests/page.tsx [Server Component]
+✓ Compiled in 691ms
+[?25h

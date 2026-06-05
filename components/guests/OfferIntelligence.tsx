@@ -2,8 +2,33 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Sparkles, Target, TrendingUp, DollarSign, Plus, RefreshCcw, CheckCircle2,
-  X, Mail, Leaf, Users, AlertTriangle, Send, ChevronRight,
+  Sparkles,
+  Target,
+  TrendingUp,
+  Users,
+  Mail,
+  Leaf,
+  AlertTriangle,
+  MessageSquare,
+  CheckCircle2,
+  ChevronRight,
+  MoreVertical,
+  DollarSign,
+  Eye,
+  Plus,
+  X,
+  Send,
+  Calendar,
+  Filter,
+  ThumbsUp,
+  Search,
+  Briefcase,
+  Layers,
+  ChevronDown,
+  Trash2,
+  Copy,
+  Pause,
+  RefreshCcw
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
