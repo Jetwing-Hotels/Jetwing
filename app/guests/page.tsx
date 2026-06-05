@@ -2,46 +2,116 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Search, MapPin, Calendar, Clock } from 'lucide-react';
+
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  BarChart, Bar, PieChart, Pie, Cell
+  Search,
+  MapPin,
+  Calendar,
+  Clock
+} from 'lucide-react';
+
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell
 } from 'recharts';
 
+import FilteringModule from '@/components/guests/FilteringModule';
+import OfferIntelligence from '@/components/guests/OfferIntelligence';
+
+
 const guestProfiles = [
-  { id: 1, name: 'Sarah Mitchell', email: 'sarah.m@example.com', tier: 'Platinum', totalSpend: 850000, lastStay: '2024-05-12', preference: 'High Floor, Eco-tours', sentiment: 0.92 },
-  { id: 2, name: 'James Wilson', email: 'j.wilson@example.com', tier: 'Gold', totalSpend: 420000, lastStay: '2024-03-20', preference: 'Vegan menu, Spa regular', sentiment: 0.85 },
-  { id: 3, name: 'Elena Rodriguez', email: 'elena.r@example.com', tier: 'Silver', totalSpend: 150000, lastStay: '2023-11-05', preference: 'Quiet room, Early check-in', sentiment: 0.78 },
+  {
+    id: 1,
+    name: 'Sarah Mitchell',
+    email: 'sarah.m@example.com',
+    tier: 'Platinum',
+    totalSpend: 850000,
+    lastStay: '2024-05-12',
+    preference: 'High Floor, Eco-tours',
+    sentiment: 0.92
+  },
+  {
+    id: 2,
+    name: 'James Wilson',
+    email: 'j.wilson@example.com',
+    tier: 'Gold',
+    totalSpend: 420000,
+    lastStay: '2024-03-20',
+    preference: 'Vegan menu, Spa regular',
+    sentiment: 0.85
+  },
+  {
+    id: 3,
+    name: 'Elena Rodriguez',
+    email: 'elena.r@example.com',
+    tier: 'Silver',
+    totalSpend: 150000,
+    lastStay: '2023-11-05',
+    preference: 'Quiet room, Early check-in',
+    sentiment: 0.78
+  }
 ];
 
 export default function GuestsPage() {
-  const [view, setView] = useState<string>('analytics');
+  const [view, setView] = useState<
+    'analytics' | 'filtering' | 'recommendations'
+  >('analytics');
 
   useEffect(() => {
-    const handler = (e: any) => {
-      if (e?.detail?.view) setView(e.detail.view);
-    };
-    window.addEventListener('guestViewChange', handler as EventListener);
-    setView('analytics');
-    return () => window.removeEventListener('guestViewChange', handler as EventListener);
-  }, []);
+    const params = new URLSearchParams(window.location.search);
+    const viewParam = params.get('view');
 
-  const AnalyticsView = () => {
-    const router = useRouter();
-    const [timePeriod, setTimePeriod] = useState<string>('monthly');
-    const [customRange, setCustomRange] = useState<{ from: string; to: string }>({ from: '', to: '' });
+    if (
+      viewParam === 'analytics' ||
+      viewParam === 'filtering' ||
+      viewParam === 'recommendations'
+    ) {
+      setView(viewParam);
+    }
 
-    useEffect(() => {
-      if (typeof window === 'undefined') return;
-      const params = new URLSearchParams(window.location.search);
-      const p = params.get('period') || 'monthly';
-      setTimePeriod(p);
-      if (p === 'custom') {
-        setCustomRange({ from: params.get('from') || '', to: params.get('to') || '' });
+    const handler = (e: Event) => {
+      const customEvent = e as CustomEvent;
+
+      if (customEvent?.detail?.view) {
+        setView(customEvent.detail.view);
       }
-    }, []);
+    };
+
+    window.addEventListener(
+      'guestViewChange',
+      handler as EventListener
+    );
+
+    return () =>
+      window.removeEventListener(
+        'guestViewChange',
+        handler as EventListener
+      );
+  }, []);
+  
+
+  if (view === 'filtering') {
+    return <FilteringModule />;
+  }
+
+  if (view === 'recommendations') {
+    return <OfferIntelligence />;
+  }
+
 
     const updatePeriod = (period: string, opts?: { from?: string; to?: string }) => {
       setTimePeriod(period);
