@@ -1,16 +1,9 @@
 "use client";
+import { SectionLabel } from '../ui';
 
 import React, { useState } from "react";
-import {
-  FileText,
-  Download,
-  FileSpreadsheet,
-  CalendarClock,
-  MapPin,
-  Bell,
-  User,
-  SlidersHorizontal,
-} from "lucide-react";
+import { sumBy, toNumber, latestByPeriod, monthLabel } from '@/lib/sustainability/api';
+import { FileText, Download, FileSpreadsheet, CalendarClock, MapPin, Bell, User, SlidersHorizontal, Users } from 'lucide-react';
 import {
   C,
   communityByHotel,
@@ -27,6 +20,7 @@ import {
   esgPillars,
   type Risk,
   type Goal,
+  type ReportRow,
 } from "../data";
 import {
   Card,
@@ -41,7 +35,130 @@ import {
 } from "../ui";
 
 // ── Community Impact ─────────────────────────────────────────────────────────
-export function CommunityImpact() {
+export function CommunityImpact({ rows = [] }: { rows?: Record<string, unknown>[] }) {
+  if (rows.length === 0) {
+    return (
+      <div>
+        <section data-export-block="true">
+          <PageHeader
+            title="Community Impact"
+            subtitle="Engagement programmes, youth training, local employment and social investment"
+          />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <StatTile
+              label="Programmes Conducted"
+              value="14"
+              sub="YTD across group"
+              accent={C.accent}
+            />
+            <StatTile
+              label="Youth Trained"
+              value="240"
+              sub="JYDP & Second Careers"
+              accent={C.primary}
+            />
+            <StatTile
+              label="Community Investment"
+              value="LKR 38.2M"
+              sub="Total spend YTD"
+              accent={C.blue}
+            />
+            <StatTile
+              label="Local Employment"
+              value="62%"
+              sub="Within district"
+              accent={C.teal}
+            />
+          </div>
+        </section>
+
+        <section data-export-block="true">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div className="lg:col-span-2">
+              <ChartCard
+                title="Community Investment Trend"
+                subtitle="Monthly (LKR millions)"
+              >
+                <AreaTrend
+                  data={communityInvestment}
+                  xKey="month"
+                  series={[
+                    { key: "amount", name: "Investment", color: C.blue },
+                  ]}
+                  height={280}
+                  unit="M"
+                />
+              </ChartCard>
+            </div>
+            <ChartCard title="Employment Breakdown" subtitle="By geography">
+              <Donut data={employmentSplit} unit="%" />
+            </ChartCard>
+          </div>
+        </section>
+
+        <section data-export-block="true">
+          <SectionLabel>Flagship Programmes & Impact</SectionLabel>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {communityPrograms.map((p) => (
+              <Card key={p.title} className="p-5 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="w-4 h-4" style={{ color: C.primary }} />
+                    <p className="text-sm font-bold" style={{ color: C.text }}>
+                      {p.title}
+                    </p>
+                  </div>
+                  <p
+                    className="text-xs leading-relaxed mb-4"
+                    style={{ color: C.subtext }}
+                  >
+                    {p.desc}
+                  </p>
+                </div>
+                <div
+                  className="flex items-center justify-between pt-3 border-t"
+                  style={{ borderColor: C.border }}
+                >
+                  <span className="text-xs font-semibold" style={{ color: C.muted }}>
+                    Active Participants
+                  </span>
+                  <span className="text-sm font-bold" style={{ color: C.primary }}>
+                    {p.participants}
+                  </span>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  const communityProgramsCount = sumBy(rows, (row) => row.community_program_count);
+  const participants = sumBy(rows, (row) => row.total_participants);
+  const investment = sumBy(rows, (row) => row.community_investment_lkr);
+
+  const latest = latestByPeriod(rows);
+
+  const localEmploymentPct = latest?.same_district_employment_rate_pct || 0;
+
+  const communityInvestmentMonthly = rows.map((row) => ({
+    month: monthLabel(toNumber(row.report_year), toNumber(row.report_month)),
+    amount: toNumber(row.community_investment_lkr) / 1000000,
+  }));
+
+  const localEmployees = sumBy(rows, (row) => row.same_district_employees);
+  const provinceEmployees = sumBy(rows, (row) => row.same_province_other_district_employees);
+  const outsideEmployees = sumBy(rows, (row) => row.outside_province_employees);
+
+  const empTotal = localEmployees + provinceEmployees + outsideEmployees;
+
+  const employmentSplitDb = empTotal > 0 ? [
+    { name: 'Within District', value: (localEmployees / empTotal) * 100, color: C.teal },
+    { name: 'Within Province', value: (provinceEmployees / empTotal) * 100, color: C.accent },
+    { name: 'Outside Province', value: (outsideEmployees / empTotal) * 100, color: C.muted },
+  ] : employmentSplit;
+
   return (
     <div>
       <section data-export-block="true">
@@ -52,27 +169,27 @@ export function CommunityImpact() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <StatTile
             label="Programmes Conducted"
-            value="385"
-            sub="+12.9% YoY"
-            accent={C.primary}
+            value={communityProgramsCount.toString()}
+            sub="YTD across group"
+            accent={C.accent}
           />
           <StatTile
             label="Youth Trained"
-            value="203"
-            sub="JYDP cumulative 1,500+"
+            value={participants.toString()}
+            sub="Active participants"
+            accent={C.primary}
+          />
+          <StatTile
+            label="Community Investment"
+            value={`LKR ${(investment / 1000000).toFixed(1)}M`}
+            sub="Total spend YTD"
             accent={C.blue}
           />
           <StatTile
             label="Local Employment"
-            value="62%"
+            value={`${toNumber(localEmploymentPct).toFixed(0)}%`}
             sub="Within district"
             accent={C.teal}
-          />
-          <StatTile
-            label="Community Investment"
-            value="LKR 34.4M"
-            sub="+18% YoY"
-            accent={C.accent}
           />
         </div>
       </section>
@@ -81,470 +198,61 @@ export function CommunityImpact() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-2">
             <ChartCard
-              title="Community Programmes by Hotel"
-              subtitle="Programmes conducted FY 2024/25"
+              title="Community Investment Trend"
+              subtitle="Monthly (LKR millions)"
             >
-              <HBar data={communityByHotel} color={C.primary} height={300} />
+              <AreaTrend
+                data={communityInvestmentMonthly}
+                xKey="month"
+                series={[
+                  { key: "amount", name: "Investment", color: C.blue },
+                ]}
+                height={280}
+                unit="M"
+              />
             </ChartCard>
           </div>
-          <ChartCard title="Local Employment" subtitle="Workforce origin">
-            <Donut data={employmentSplit} unit="%" />
+          <ChartCard title="Employment Breakdown" subtitle="By geography">
+            <Donut data={employmentSplitDb} unit="%" />
           </ChartCard>
         </div>
       </section>
 
       <section data-export-block="true">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ChartCard
-            title="Community Investment Trend"
-            subtitle="LKR millions per month"
-          >
-            <AreaTrend
-              data={communityInvestment}
-              series={[
-                { key: "amount", name: "Investment (LKR M)", color: C.accent },
-              ]}
-            />
-          </ChartCard>
-          <Card className="p-5">
-            <p className="text-sm font-bold mb-4" style={{ color: C.text }}>
-              Flagship Programmes · Social Impact Score 86/100
-            </p>
-            <div className="space-y-3">
-              {communityPrograms.map((p) => (
-                <div
-                  key={p.title}
-                  className="p-3 rounded-lg border"
-                  style={{
-                    borderColor: C.border,
-                    borderLeft: `3px solid ${C.primary}`,
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <p
-                      className="text-sm font-bold"
-                      style={{ color: C.primary }}
-                    >
+          <SectionLabel>Flagship Programmes & Impact</SectionLabel>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {communityPrograms.map((p) => (
+              <Card key={p.title} className="p-5 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="w-4 h-4" style={{ color: C.primary }} />
+                    <p className="text-sm font-bold" style={{ color: C.text }}>
                       {p.title}
                     </p>
-                    <span
-                      className="text-xs font-bold"
-                      style={{ color: C.text }}
-                    >
-                      {p.participants}{" "}
-                      <span className="font-normal" style={{ color: C.muted }}>
-                        participants
-                      </span>
-                    </span>
                   </div>
                   <p
-                    className="text-xs mt-1 leading-relaxed"
+                    className="text-xs leading-relaxed mb-4"
                     style={{ color: C.subtext }}
                   >
                     {p.desc}
                   </p>
                 </div>
-              ))}
-            </div>
-          </Card>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-// ── Local Sourcing ───────────────────────────────────────────────────────────
-function SupplierMap() {
-  // Simplified Sri Lanka silhouette bounds
-  const lat = { min: 5.8, max: 9.9 };
-  const lng = { min: 79.6, max: 81.9 };
-  const W = 240,
-    H = 380;
-  const px = (lng_: number) => ((lng_ - lng.min) / (lng.max - lng.min)) * W;
-  const py = (lat_: number) => H - ((lat_ - lat.min) / (lat.max - lat.min)) * H;
-  const max = Math.max(...supplierRegions.map((r) => r.suppliers));
-  return (
-    <div className="flex flex-col items-center">
-      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="mx-auto">
-        <path
-          d="M120 18 C150 30 168 70 165 110 C163 150 178 175 172 215 C166 255 150 290 120 350 C95 360 78 330 70 295 C60 255 52 215 56 175 C60 135 70 90 88 55 C98 35 105 22 120 18 Z"
-          fill={C.softGreen}
-          stroke={C.primaryLight}
-          strokeWidth={1.5}
-        />
-        {supplierRegions.map((r) => {
-          const radius = 6 + (r.suppliers / max) * 16;
-          return (
-            <g key={r.region}>
-              <circle
-                cx={px(r.lng)}
-                cy={py(r.lat)}
-                r={radius}
-                fill={C.primary}
-                fillOpacity={0.25}
-              />
-              <circle cx={px(r.lng)} cy={py(r.lat)} r={4} fill={C.primary} />
-            </g>
-          );
-        })}
-      </svg>
-      <p className="text-[11px] mt-2" style={{ color: C.muted }}>
-        Bubble size ∝ supplier count by province
-      </p>
-    </div>
-  );
-}
-
-export function LocalSourcing() {
-  return (
-    <div>
-      <section data-export-block="true">
-        <PageHeader
-          title="Local Sourcing"
-          subtitle="Supplier distribution, procurement trends and sustainability ratings"
-        />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <StatTile
-            label="Local Sourcing"
-            value="78%"
-            sub="+6 pts YoY"
-            accent={C.primary}
-          />
-          <StatTile
-            label="Sri Lankan Suppliers"
-            value="100%"
-            sub="Registered businesses"
-            accent={C.green}
-          />
-          <StatTile
-            label="Active Suppliers"
-            value="353"
-            sub="Across 6 provinces"
-            accent={C.blue}
-          />
-          <StatTile
-            label="Avg Supplier Rating"
-            value="4.5 / 5"
-            sub="Sustainability assessed"
-            accent={C.accent}
-          />
-        </div>
-      </section>
-
-      <section data-export-block="true">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <Card className="p-5">
-            <div className="flex items-center gap-2 mb-2">
-              <MapPin className="w-4 h-4" style={{ color: C.primary }} />
-              <p className="text-sm font-bold" style={{ color: C.text }}>
-                Supplier Distribution
-              </p>
-            </div>
-            <SupplierMap />
-          </Card>
-          <div className="lg:col-span-2 space-y-6">
-            <ChartCard
-              title="Suppliers by Province"
-              subtitle="Active supplier count"
-            >
-              <HBar
-                data={supplierRegions.map((r) => ({
-                  name: r.region,
-                  value: r.suppliers,
-                }))}
-                color={C.primary}
-                height={220}
-              />
-            </ChartCard>
-            <ChartCard
-              title="Procurement Trend"
-              subtitle="Local vs imported share (%)"
-            >
-              <AreaTrend
-                data={sourcingTrend}
-                height={220}
-                series={[
-                  { key: "local", name: "Local", color: C.primary },
-                  { key: "imported", name: "Imported", color: C.muted },
-                ]}
-                unit="%"
-              />
-            </ChartCard>
-          </div>
-        </div>
-      </section>
-
-      <section data-export-block="true">
-        <Card className="overflow-hidden">
-          <div className="p-5 border-b" style={{ borderColor: C.border }}>
-            <p className="text-sm font-bold" style={{ color: C.text }}>
-              Top Suppliers — Sustainability Rating
-            </p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ backgroundColor: C.bg }}>
-                  {[
-                    "Supplier",
-                    "Category",
-                    "Annual Spend",
-                    "Sustainability Rating",
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      className="text-left py-3 px-4 text-[11px] font-semibold uppercase tracking-wider"
-                      style={{ color: C.subtext }}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {supplierRatings.map((s) => (
-                  <tr
-                    key={s.name}
-                    style={{ borderTop: `1px solid ${C.border}` }}
-                  >
-                    <td
-                      className="py-3 px-4 font-semibold"
-                      style={{ color: C.text }}
-                    >
-                      {s.name}
-                    </td>
-                    <td className="py-3 px-4" style={{ color: C.subtext }}>
-                      {s.category}
-                    </td>
-                    <td className="py-3 px-4" style={{ color: C.subtext }}>
-                      {s.spend}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-24 h-1.5 rounded-full"
-                          style={{ backgroundColor: C.border }}
-                        >
-                          <div
-                            className="h-1.5 rounded-full"
-                            style={{
-                              width: `${(s.rating / 5) * 100}%`,
-                              backgroundColor: C.primary,
-                            }}
-                          />
-                        </div>
-                        <span
-                          className="text-xs font-bold"
-                          style={{ color: C.text }}
-                        >
-                          {s.rating}
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      </section>
-    </div>
-  );
-}
-
-// ── ESG Reports ──────────────────────────────────────────────────────────────
-export function EsgReports() {
-  return (
-    <div>
-      <section data-export-block="true">
-        <PageHeader
-          title="ESG Reports"
-          subtitle="Generate, export and schedule sustainability disclosures"
-        />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          {esgPillars.map((p) => (
-            <Card key={p.name} className="p-5" accent={p.color}>
-              <div className="flex items-end justify-between">
-                <p className="text-sm font-bold" style={{ color: C.text }}>
-                  {p.name}
-                </p>
-                <p className="text-2xl font-bold" style={{ color: p.color }}>
-                  {p.score}
-                  <span className="text-sm" style={{ color: C.muted }}>
-                    /100
+                <div
+                  className="flex items-center justify-between pt-3 border-t"
+                  style={{ borderColor: C.border }}
+                >
+                  <span className="text-xs font-semibold" style={{ color: C.muted }}>
+                    Active Participants
                   </span>
-                </p>
-              </div>
-              <div className="mt-3">
-                <ProgressBar value={p.score} color={p.color} />
-              </div>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section data-export-block="true">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <div className="lg:col-span-2">
-            <Card className="overflow-hidden">
-              <div
-                className="p-5 border-b flex items-center justify-between"
-                style={{ borderColor: C.border }}
-              >
-                <p className="text-sm font-bold" style={{ color: C.text }}>
-                  Report Library
-                </p>
-                <button
-                  className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white"
-                  style={{ backgroundColor: C.primary }}
-                >
-                  + Generate Report
-                </button>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr style={{ backgroundColor: C.bg }}>
-                      {["Report", "Type", "Period", "Status", "Export"].map(
-                        (h) => (
-                          <th
-                            key={h}
-                            className="text-left py-3 px-4 text-[11px] font-semibold uppercase tracking-wider"
-                            style={{ color: C.subtext }}
-                          >
-                            {h}
-                          </th>
-                        ),
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {reports.map((r) => (
-                      <tr
-                        key={r.name}
-                        style={{ borderTop: `1px solid ${C.border}` }}
-                      >
-                        <td
-                          className="py-3 px-4 font-semibold"
-                          style={{ color: C.text }}
-                        >
-                          <div className="flex items-center gap-2">
-                            <FileText
-                              className="w-4 h-4"
-                              style={{ color: C.primary }}
-                            />
-                            {r.name}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4" style={{ color: C.subtext }}>
-                          {r.type}
-                        </td>
-                        <td className="py-3 px-4" style={{ color: C.subtext }}>
-                          {r.period}
-                        </td>
-                        <td className="py-3 px-4">
-                          <SeverityPill level={r.status} />
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              className="p-1.5 rounded-md border"
-                              style={{ borderColor: C.border }}
-                              title="Export PDF"
-                            >
-                              <Download
-                                className="w-3.5 h-3.5"
-                                style={{ color: C.red }}
-                              />
-                            </button>
-                            <button
-                              className="p-1.5 rounded-md border"
-                              style={{ borderColor: C.border }}
-                              title="Export Excel"
-                            >
-                              <FileSpreadsheet
-                                className="w-3.5 h-3.5"
-                                style={{ color: C.green }}
-                              />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
+                  <span className="text-sm font-bold" style={{ color: C.primary }}>
+                    {p.participants}
+                  </span>
+                </div>
+              </Card>
+            ))}
           </div>
+        </section>
 
-          <div className="space-y-6">
-            <Card className="p-5">
-              <p className="text-sm font-bold mb-4" style={{ color: C.text }}>
-                Compliance Frameworks
-              </p>
-              <div className="space-y-3">
-                {complianceFrameworks.map((f) => (
-                  <div key={f.name}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span
-                        className="text-xs font-semibold"
-                        style={{ color: C.text }}
-                      >
-                        {f.name}
-                      </span>
-                      <span
-                        className="text-[11px] font-medium"
-                        style={{ color: C.subtext }}
-                      >
-                        {f.status}
-                      </span>
-                    </div>
-                    <ProgressBar value={f.coverage} color={C.blue} />
-                  </div>
-                ))}
-              </div>
-            </Card>
-            <Card className="p-5" accent={C.accent}>
-              <div className="flex items-center gap-2 mb-2">
-                <CalendarClock
-                  className="w-4 h-4"
-                  style={{ color: C.accentDark }}
-                />
-                <p className="text-sm font-bold" style={{ color: C.text }}>
-                  Scheduled Reporting
-                </p>
-              </div>
-              <p
-                className="text-xs leading-relaxed mb-3"
-                style={{ color: C.subtext }}
-              >
-                Q1 FY25/26 ESG Update is scheduled for automated generation on
-                15 Jul 2026.
-              </p>
-              <div className="flex items-center gap-2 text-xs">
-                <span
-                  className="px-2 py-1 rounded-md font-medium"
-                  style={{ backgroundColor: C.bg, color: C.subtext }}
-                >
-                  Quarterly
-                </span>
-                <span
-                  className="px-2 py-1 rounded-md font-medium"
-                  style={{ backgroundColor: C.bg, color: C.subtext }}
-                >
-                  PDF + Excel
-                </span>
-                <span
-                  className="px-2 py-1 rounded-md font-medium"
-                  style={{ backgroundColor: C.bg, color: C.subtext }}
-                >
-                  Board distribution
-                </span>
-              </div>
-            </Card>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }
@@ -645,103 +353,71 @@ function RiskHeatmap() {
   );
 }
 
-export function RiskManagement() {
-  const ranked = [...risks].sort(
-    (a, b) => b.probability * b.severity - a.probability * a.severity,
-  );
-  return (
-    <div>
-      <section data-export-block="true">
-        <PageHeader
-          title="Risk Management"
-          subtitle="Climate, water, biodiversity, energy and regulatory risk monitoring"
-        />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <StatTile
-            label="Tracked Risks"
-            value="8"
-            sub="Across 5 categories"
-            accent={C.primary}
+export function RiskManagement({ rows = [] }: { rows?: Record<string, unknown>[] }) {
+  if (rows.length === 0) {
+    return (
+      <div>
+        <section data-export-block="true">
+          <PageHeader
+            title="Risk Management"
+            subtitle="Sustainability risk register and mitigation tracking"
           />
-          <StatTile
-            label="High Severity"
-            value="2"
-            sub="Active mitigation"
-            accent={C.red}
-          />
-          <StatTile
-            label="Avg Mitigation"
-            value="69%"
-            sub="Progress across register"
-            accent={C.green}
-          />
-          <StatTile
-            label="Trending Up"
-            value="5"
-            sub="Probability rising"
-            accent={C.accentDark}
-          />
-        </div>
-      </section>
-
-      <section data-export-block="true">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
-          <div className="lg:col-span-2">
-            <ChartCard title="Risk Heat Map" subtitle="Probability × Severity">
-              <RiskHeatmap />
-              <div className="flex items-center gap-3 mt-3 text-[11px]">
-                {[
-                  { l: "Low", c: C.primary },
-                  { l: "Moderate", c: C.accent },
-                  { l: "High", c: C.accentDark },
-                  { l: "Critical", c: C.red },
-                ].map((x) => (
-                  <span key={x.l} className="flex items-center gap-1">
-                    <span
-                      className="w-3 h-3 rounded-sm"
-                      style={{ backgroundColor: x.c }}
-                    />
-                    <span style={{ color: C.subtext }}>{x.l}</span>
-                  </span>
-                ))}
-              </div>
-            </ChartCard>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <StatTile
+              label="Total Risks"
+              value="8"
+              sub="Tracked group-wide"
+              accent={C.primary}
+            />
+            <StatTile
+              label="High Risk Items"
+              value="2"
+              sub="Requires attention"
+              accent={C.red}
+            />
+            <StatTile
+              label="Avg Mitigation"
+              value="68%"
+              sub="Progress across risks"
+              accent={C.green}
+            />
+            <StatTile
+              label="Emerging Risks"
+              value="3"
+              sub="Trending upward"
+              accent={C.amber}
+            />
           </div>
-          <div className="lg:col-span-3">
-            <Card className="overflow-hidden h-full">
-              <div className="p-5 border-b" style={{ borderColor: C.border }}>
-                <p className="text-sm font-bold" style={{ color: C.text }}>
-                  Risk Register
-                </p>
-              </div>
+        </section>
+
+        <section data-export-block="true">
+          <div className="grid grid-cols-1 gap-6">
+            <Card className="overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-sm text-left">
                   <thead>
-                    <tr style={{ backgroundColor: C.bg }}>
-                      {["ID", "Risk", "Category", "Score", "Mitigation"].map(
-                        (h) => (
-                          <th
-                            key={h}
-                            className="text-left py-2.5 px-3 text-[11px] font-semibold uppercase tracking-wider"
-                            style={{ color: C.subtext }}
-                          >
-                            {h}
-                          </th>
-                        ),
-                      )}
+                    <tr style={{ backgroundColor: C.bg, borderBottom: `1px solid ${C.border}` }}>
+                      {["ID", "Risk Title", "Category", "Score", "Mitigation"].map((h) => (
+                        <th
+                          key={h}
+                          className="py-3 px-3 text-[11px] font-semibold uppercase tracking-wider"
+                          style={{ color: C.subtext }}
+                        >
+                          {h}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
-                  <tbody>
-                    {ranked.map((r: Risk) => {
+                  <tbody className="divide-y" style={{ borderColor: C.border }}>
+                    {risks.map((r: Risk) => {
                       const score = r.probability * r.severity;
+                      const riskColor = (s: number) =>
+                        s >= 20 ? C.red : s >= 12 ? C.amber : s >= 8 ? C.primary : C.green;
                       return (
-                        <tr
-                          key={r.id}
-                          style={{ borderTop: `1px solid ${C.border}` }}
-                        >
+                        <tr key={r.id}>
                           <td
-                            className="py-2.5 px-3 font-bold"
-                            style={{ color: C.subtext }}
+                            className="py-2.5 px-3 font-medium"
+                            style={{ color: C.muted }}
                           >
                             {r.id}
                           </td>
@@ -776,6 +452,97 @@ export function RiskManagement() {
               </div>
             </Card>
           </div>
+        </section>
+      </div>
+    );
+  }
+
+  const highRiskCount = rows.filter((row) => row.risk_level === 'High').length;
+  const averageRiskScore = rows.length === 0 ? 0 : sumBy(rows, (row) => row.risk_score) / rows.length;
+  const riskColor = (s: number) =>
+    s >= 20 ? C.red : s >= 12 ? C.amber : s >= 8 ? C.primary : C.green;
+
+  return (
+    <div>
+      <section data-export-block="true">
+        <PageHeader
+          title="Risk Management"
+          subtitle="Sustainability risk register and mitigation tracking"
+        />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <StatTile
+            label="Total Risks"
+            value={rows.length.toString()}
+            sub="Tracked group-wide"
+            accent={C.primary}
+          />
+          <StatTile
+            label="High Risk Items"
+            value={highRiskCount.toString()}
+            sub="Requires attention"
+            accent={C.red}
+          />
+          <StatTile
+            label="Avg Risk Score"
+            value={averageRiskScore.toFixed(1)}
+            sub="Out of 100"
+            accent={C.amber}
+          />
+        </div>
+      </section>
+
+      <section data-export-block="true">
+        <div className="grid grid-cols-1 gap-6">
+          <Card className="overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead>
+                  <tr style={{ backgroundColor: C.bg, borderBottom: `1px solid ${C.border}` }}>
+                    {["Risk Title", "Category", "Score", "Level", "Status"].map((h) => (
+                      <th
+                        key={h}
+                        className="py-3 px-3 text-[11px] font-semibold uppercase tracking-wider"
+                        style={{ color: C.subtext }}
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y" style={{ borderColor: C.border }}>
+                  {rows.map((r, index) => {
+                    return (
+                      <tr key={index}>
+                        <td className="py-2.5 px-3" style={{ color: C.text }}>
+                          {r.risk_title as string}
+                        </td>
+                        <td
+                          className="py-2.5 px-3"
+                          style={{ color: C.subtext }}
+                        >
+                          {r.risk_category as string}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <span
+                            className="inline-flex items-center justify-center w-8 h-7 rounded-md text-xs font-bold text-white"
+                            style={{ backgroundColor: riskColor(toNumber(r.risk_score) / 4) }}
+                          >
+                            {toNumber(r.risk_score)}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <SeverityPill level={r.risk_level === 'High' ? 'At Risk' : r.risk_level === 'Medium' ? 'Behind' : 'On Track'} />
+                        </td>
+                        <td className="py-2.5 px-3" style={{ color: C.subtext }}>
+                           {r.status as string}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
         </div>
       </section>
     </div>
@@ -783,7 +550,107 @@ export function RiskManagement() {
 }
 
 // ── Sustainability Goals ─────────────────────────────────────────────────────
-export function SustainabilityGoals() {
+export function SustainabilityGoals({ rows = [] }: { rows?: Record<string, unknown>[] }) {
+  if (rows.length === 0) {
+    return (
+      <div>
+        <section data-export-block="true">
+          <PageHeader
+            title="Sustainability Goals"
+            subtitle="Strategic targets and progress tracking toward 2027–2030 commitments"
+          />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <StatTile
+              label="Active Goals"
+              value="6"
+              sub="Group-wide targets"
+              accent={C.primary}
+            />
+            <StatTile
+              label="On Track"
+              value="4"
+              sub="Meeting trajectory"
+              accent={C.green}
+            />
+            <StatTile
+              label="At Risk"
+              value="1"
+              sub="Needs attention"
+              accent={C.amber}
+            />
+            <StatTile
+              label="Behind"
+              value="1"
+              sub="Acceleration required"
+              accent={C.red}
+            />
+          </div>
+        </section>
+
+        <section data-export-block="true">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {goals.map((g: Goal) => {
+              const pct = Math.round((g.current / g.target) * 100);
+              return (
+                <Card key={g.label} className="p-5">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <p className="text-sm font-bold" style={{ color: C.text }}>
+                        {g.label}
+                      </p>
+                      <p className="text-xs mt-0.5" style={{ color: C.muted }}>
+                        Target by {g.deadline}
+                      </p>
+                    </div>
+                    <SeverityPill level={g.status} />
+                  </div>
+                  <div className="flex items-end gap-2 mb-3">
+                    <p
+                      className="text-3xl font-bold leading-none"
+                      style={{ color: g.color }}
+                    >
+                      {g.current}
+                      {g.unit}
+                    </p>
+                    <p className="text-sm mb-0.5" style={{ color: C.muted }}>
+                      / {g.target}
+                      {g.unit} target
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[11px]" style={{ color: C.subtext }}>
+                      Progress to target
+                    </span>
+                    <span
+                      className="text-[11px] font-bold"
+                      style={{ color: g.color }}
+                    >
+                      {pct}%
+                    </span>
+                  </div>
+                  <ProgressBar
+                    value={pct}
+                    color={
+                      g.status === "Behind"
+                        ? C.red
+                        : g.status === "At Risk"
+                          ? C.amber
+                          : g.color
+                    }
+                  />
+                </Card>
+              );
+            })}
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  const achieved = rows.filter((row) => row.computed_status === 'achieved').length;
+  const atRisk = rows.filter((row) => row.computed_status === 'at_risk').length;
+  const avgProgress = rows.length === 0 ? 0 : sumBy(rows, (row) => row.progress_pct) / rows.length;
+
   return (
     <div>
       <section data-export-block="true">
@@ -794,59 +661,59 @@ export function SustainabilityGoals() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <StatTile
             label="Active Goals"
-            value="6"
+            value={rows.length.toString()}
             sub="Group-wide targets"
             accent={C.primary}
           />
           <StatTile
-            label="On Track"
-            value="4"
+            label="Achieved"
+            value={achieved.toString()}
             sub="Meeting trajectory"
             accent={C.green}
           />
           <StatTile
             label="At Risk"
-            value="1"
+            value={atRisk.toString()}
             sub="Needs attention"
             accent={C.amber}
           />
           <StatTile
-            label="Behind"
-            value="1"
-            sub="Acceleration required"
-            accent={C.red}
+            label="Avg Progress"
+            value={`${avgProgress.toFixed(1)}%`}
+            sub="Overall average"
+            accent={C.blue}
           />
         </div>
       </section>
 
       <section data-export-block="true">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {goals.map((g: Goal) => {
-            const pct = Math.round((g.current / g.target) * 100);
+          {rows.map((g) => {
+            const pct = Math.round(toNumber(g.progress_pct));
+            const statusLevel = g.computed_status === 'at_risk' ? 'At Risk' : g.computed_status === 'achieved' ? 'On Track' : 'On Track';
+            const color = g.computed_status === 'at_risk' ? C.amber : g.computed_status === 'achieved' ? C.green : C.primary;
             return (
-              <Card key={g.label} className="p-5">
+              <Card key={g.goal_name as string} className="p-5">
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <p className="text-sm font-bold" style={{ color: C.text }}>
-                      {g.label}
+                      {g.goal_name as string}
                     </p>
                     <p className="text-xs mt-0.5" style={{ color: C.muted }}>
-                      Target by {g.deadline}
+                      Target by {new Date(g.due_date as string).getFullYear()}
                     </p>
                   </div>
-                  <SeverityPill level={g.status} />
+                  <SeverityPill level={statusLevel} />
                 </div>
                 <div className="flex items-end gap-2 mb-3">
                   <p
                     className="text-3xl font-bold leading-none"
-                    style={{ color: g.color }}
+                    style={{ color: color }}
                   >
-                    {g.current}
-                    {g.unit}
+                    {toNumber(g.current_value)}
                   </p>
                   <p className="text-sm mb-0.5" style={{ color: C.muted }}>
-                    / {g.target}
-                    {g.unit} target
+                    / {toNumber(g.target_value)} target
                   </p>
                 </div>
                 <div className="flex items-center justify-between mb-1">
@@ -855,20 +722,14 @@ export function SustainabilityGoals() {
                   </span>
                   <span
                     className="text-[11px] font-bold"
-                    style={{ color: g.color }}
+                    style={{ color: color }}
                   >
                     {pct}%
                   </span>
                 </div>
                 <ProgressBar
                   value={pct}
-                  color={
-                    g.status === "Behind"
-                      ? C.red
-                      : g.status === "At Risk"
-                        ? C.amber
-                        : g.color
-                  }
+                  color={color}
                 />
               </Card>
             );
@@ -1029,6 +890,291 @@ export function Settings() {
           </div>
         </Card>
       </div>
+    </div>
+  );
+}
+
+export function EsgReports({ esgRows = [], governanceRows = [] }: { esgRows?: Record<string, unknown>[], governanceRows?: Record<string, unknown>[] }) {
+  if (governanceRows.length === 0) {
+    return (
+      <div>
+        <section data-export-block="true">
+          <PageHeader
+            title="ESG Reports & Compliance"
+            subtitle="Framework alignment, disclosures and governance documentation"
+          />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <StatTile
+              label="Overall ESG Score"
+              value="87"
+              sub="Rating: AA"
+              accent={C.primary}
+            />
+            <StatTile
+              label="Frameworks"
+              value="5"
+              sub="Aligned or mapped"
+              accent={C.blue}
+            />
+            <StatTile
+              label="Published Reports"
+              value="3"
+              sub="FY 24/25"
+              accent={C.teal}
+            />
+            <StatTile
+              label="Compliance"
+              value="94%"
+              sub="Mandatory disclosures"
+              accent={C.green}
+            />
+          </div>
+        </section>
+
+        <section data-export-block="true">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <ChartCard title="Pillar Breakdown" subtitle="E, S and G sub-scores">
+              <HBar
+                data={esgPillars}
+                dataKey="score"
+                color={C.primary}
+                perBarColor
+                height={220}
+              />
+            </ChartCard>
+            <div className="lg:col-span-2">
+              <ChartCard
+                title="Framework Alignment"
+                subtitle="Standard mapping coverage"
+              >
+                <div className="space-y-4">
+                  {complianceFrameworks.map((f) => (
+                    <div key={f.name}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span
+                          className="text-xs font-semibold"
+                          style={{ color: C.text }}
+                        >
+                          {f.name}
+                        </span>
+                        <span className="text-xs" style={{ color: C.subtext }}>
+                          {f.status} · {f.coverage}%
+                        </span>
+                      </div>
+                      <ProgressBar
+                        value={f.coverage}
+                        color={f.coverage > 80 ? C.green : C.primary}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </ChartCard>
+            </div>
+          </div>
+        </section>
+
+        <section data-export-block="true">
+          <SectionLabel>Reporting Centre</SectionLabel>
+          <Card className="overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead>
+                  <tr style={{ backgroundColor: C.bg, borderBottom: `1px solid ${C.border}` }}>
+                    {["Report Name", "Type", "Period", "Updated", "Status"].map((h) => (
+                      <th
+                        key={h}
+                        className="py-3 px-4 text-[11px] font-semibold uppercase tracking-wider"
+                        style={{ color: C.subtext }}
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y" style={{ borderColor: C.border }}>
+                  {reports.map((r: ReportRow) => (
+                    <tr key={r.name}>
+                      <td className="py-3 px-4 font-semibold" style={{ color: C.text }}>
+                        {r.name}
+                      </td>
+                      <td className="py-3 px-4" style={{ color: C.subtext }}>
+                        {r.type}
+                      </td>
+                      <td className="py-3 px-4 font-medium" style={{ color: C.text }}>
+                        {r.period}
+                      </td>
+                      <td className="py-3 px-4" style={{ color: C.subtext }}>
+                        {new Date(r.updated).toLocaleDateString()}
+                      </td>
+                      <td className="py-3 px-4">
+                        <SeverityPill
+                          level={
+                            r.status === "Published"
+                              ? "On Track"
+                              : r.status === "Draft"
+                                ? "At Risk"
+                                : "Behind"
+                          }
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </section>
+      </div>
+    );
+  }
+
+  const latestGov = [...governanceRows].sort((a, b) => toNumber(b.report_year) - toNumber(a.report_year))[0];
+  const policyScore = latestGov?.policy_disclosure_score || 0;
+  const govScore = latestGov?.governance_score || 0;
+
+  const latestEsg = esgRows.length > 0 ? [...esgRows].sort((a, b) => {
+     const yearDiff = toNumber(b.report_year) - toNumber(a.report_year);
+     if (yearDiff !== 0) return yearDiff;
+     return toNumber(b.report_month) - toNumber(a.report_month);
+  })[0] : null;
+
+  const dbEsgPillars = latestEsg ? [
+    { name: 'Environmental', score: toNumber(latestEsg.environmental_score), color: C.primary },
+    { name: 'Social', score: toNumber(latestEsg.social_score), color: C.blue },
+    { name: 'Governance', score: toNumber(latestEsg.governance_score), color: C.accent },
+  ] : esgPillars;
+
+  const overallEsg = latestEsg ? toNumber(latestEsg.overall_score) : 87;
+
+  return (
+    <div>
+      <section data-export-block="true">
+        <PageHeader
+          title="ESG Reports & Compliance"
+          subtitle="Framework alignment, disclosures and governance documentation"
+        />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <StatTile
+            label="Overall ESG Score"
+            value={overallEsg.toFixed(0)}
+            sub={latestEsg ? "Calculated score" : "Rating: AA"}
+            accent={C.primary}
+          />
+          <StatTile
+            label="Governance Score"
+            value={toNumber(govScore).toFixed(0)}
+            sub="Out of 100"
+            accent={C.blue}
+          />
+          <StatTile
+            label="Policy Disclosure"
+            value={toNumber(policyScore).toFixed(0)}
+            sub="Out of 100"
+            accent={C.teal}
+          />
+          <StatTile
+            label="High Risk Items"
+            value={(latestGov?.high_risk_count || 0).toString()}
+            sub="From risk register"
+            accent={C.red}
+          />
+        </div>
+      </section>
+
+      <section data-export-block="true">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <ChartCard title="Pillar Breakdown" subtitle="E, S and G sub-scores">
+            <HBar
+              data={dbEsgPillars}
+              dataKey="score"
+              color={C.primary}
+              perBarColor
+              height={220}
+            />
+          </ChartCard>
+          <div className="lg:col-span-2">
+            <ChartCard
+              title="Framework Alignment"
+              subtitle="Standard mapping coverage"
+            >
+              <div className="space-y-4">
+                {complianceFrameworks.map((f) => (
+                  <div key={f.name}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span
+                        className="text-xs font-semibold"
+                        style={{ color: C.text }}
+                      >
+                        {f.name}
+                      </span>
+                      <span className="text-xs" style={{ color: C.subtext }}>
+                        {f.status} · {f.coverage}%
+                      </span>
+                    </div>
+                    <ProgressBar
+                      value={f.coverage}
+                      color={f.coverage > 80 ? C.green : C.primary}
+                    />
+                  </div>
+                ))}
+              </div>
+            </ChartCard>
+          </div>
+        </div>
+      </section>
+
+      <section data-export-block="true">
+        <SectionLabel>Reporting Centre</SectionLabel>
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr style={{ backgroundColor: C.bg, borderBottom: `1px solid ${C.border}` }}>
+                  {["Report Name", "Type", "Period", "Updated", "Status"].map((h) => (
+                    <th
+                      key={h}
+                      className="py-3 px-4 text-[11px] font-semibold uppercase tracking-wider"
+                      style={{ color: C.subtext }}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y" style={{ borderColor: C.border }}>
+                {reports.map((r: ReportRow) => (
+                  <tr key={r.name}>
+                    <td className="py-3 px-4 font-semibold" style={{ color: C.text }}>
+                      {r.name}
+                    </td>
+                    <td className="py-3 px-4" style={{ color: C.subtext }}>
+                      {r.type}
+                    </td>
+                    <td className="py-3 px-4 font-medium" style={{ color: C.text }}>
+                      {r.period}
+                    </td>
+                    <td className="py-3 px-4" style={{ color: C.subtext }}>
+                      {new Date(r.updated).toLocaleDateString()}
+                    </td>
+                    <td className="py-3 px-4">
+                      <SeverityPill
+                        level={
+                          r.status === "Published"
+                            ? "On Track"
+                            : r.status === "Draft"
+                              ? "At Risk"
+                              : "Behind"
+                        }
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </section>
+
     </div>
   );
 }

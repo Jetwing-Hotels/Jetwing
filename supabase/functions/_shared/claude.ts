@@ -90,8 +90,8 @@ export async function generateJson<T>(opts: {
       messages,
     };
 
-    // deno-lint-ignore no-explicit-any
-    const res = (await client.messages.create(params as any)) as unknown as ClaudeResponse;
+    // deno-lint-ignore no-explicit-unknown
+    const res = (await client.messages.create(params as unknown)) as unknown as ClaudeResponse;
 
     tokensIn +=
       (res.usage?.input_tokens ?? 0) +

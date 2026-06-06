@@ -122,6 +122,7 @@ export default function OfferIntelligence() {
     }
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
   const pending = useMemo(() => offers.filter((o) => o.status === 'PENDING_REVIEW'), [offers]);

@@ -674,7 +674,124 @@ export function WasteManagement({ rows }: { rows: SustainabilityEnvironmentRow[]
 }
 
 // ── Biodiversity ─────────────────────────────────────────────────────────────
-export function Biodiversity() {
+export function Biodiversity({ rows = [] }: { rows?: Record<string, unknown>[] }) {
+  if (rows.length === 0) {
+    return (
+      <div>
+        <section data-export-block="true">
+          <PageHeader
+            title="Biodiversity"
+            subtitle="Species monitoring, habitat protection and conservation projects"
+          />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <StatTile
+              label="Species Recorded"
+              value="344"
+              sub="Rapid biodiversity survey"
+              accent={C.teal}
+            />
+            <StatTile
+              label="Endemicity Rate"
+              value="11.4%"
+              sub="Endemic species"
+              accent={C.primaryDark}
+            />
+            <StatTile
+              label="Protected Habitat"
+              value="88 ha"
+              sub="Across properties"
+              accent={C.primary}
+            />
+            <StatTile
+              label="Active Projects"
+              value="5"
+              sub="4 on track, 1 at risk"
+              accent={C.accent}
+            />
+          </div>
+        </section>
+
+        <section data-export-block="true">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div className="lg:col-span-2">
+              <ChartCard
+                title="Species Growth — Vil Uyana"
+                subtitle="2005 vs 2025 (count by group)"
+              >
+                <VBar
+                  data={speciesGrowth}
+                  xKey="name"
+                  height={300}
+                  bars={[
+                    { key: "y2005", name: "2005", color: C.muted },
+                    { key: "y2025", name: "2025", color: C.primary },
+                  ]}
+                />
+              </ChartCard>
+            </div>
+            <ChartCard
+              title="Protected Habitat Coverage"
+              subtitle="Share by type"
+            >
+              <Donut data={habitatCoverage} unit="%" />
+            </ChartCard>
+          </div>
+        </section>
+
+        <section data-export-block="true">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ChartCard
+              title="Species Recorded by Group"
+              subtitle="Current survey count"
+            >
+              <HBar data={speciesRecorded} color={C.teal} height={260} />
+            </ChartCard>
+            <Card className="p-5">
+              <p className="text-sm font-bold mb-4" style={{ color: C.text }}>
+                Conservation Project Status
+              </p>
+              <div className="space-y-4">
+                {conservationProjects.map((p) => (
+                  <div key={p.name}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span
+                        className="text-xs font-semibold"
+                        style={{ color: C.text }}
+                      >
+                        {p.name}
+                      </span>
+                      <SeverityPill level={p.status} />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <ProgressBar
+                        value={p.progress}
+                        color={p.status === "At Risk" ? C.amber : C.primary}
+                      />
+                      <span
+                        className="text-[11px] w-16 text-right"
+                        style={{ color: C.muted }}
+                      >
+                        {p.lead}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  const sortedRows = [...rows].sort((a, b) => Number(b.report_year) - Number(a.report_year));
+  const latest = sortedRows[0];
+  const totalSpecies = rows.reduce((acc, row) => acc + Number(row.species_richness || 0), 0);
+  const totalHabitat = rows.reduce((acc, row) => acc + Number(row.protected_habitat_hectares || 0), 0);
+  const activeProjects = rows.reduce((acc, row) => acc + Number(row.active_conservation_projects || 0), 0);
+
+  const isAllProperties = Array.from(new Set(rows.map(r => r.property_id))).length > 1;
+
   return (
     <div>
       <section data-export-block="true">
@@ -685,26 +802,26 @@ export function Biodiversity() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <StatTile
             label="Species Recorded"
-            value="344"
-            sub="Rapid biodiversity survey"
+            value={(isAllProperties ? totalSpecies : (latest.species_richness as number || 0)).toString()}
+            sub={isAllProperties ? "Total across properties" : "Latest survey"}
             accent={C.teal}
           />
           <StatTile
-            label="Endemicity Rate"
-            value="11.4%"
+            label="Endemic Species"
+            value={((latest.endemic_species_count as number) || 0).toString()}
             sub="Endemic species"
             accent={C.primaryDark}
           />
           <StatTile
             label="Protected Habitat"
-            value="88 ha"
+            value={`${totalHabitat.toFixed(1)} ha`}
             sub="Across properties"
             accent={C.primary}
           />
           <StatTile
             label="Active Projects"
-            value="5"
-            sub="4 on track, 1 at risk"
+            value={activeProjects.toString()}
+            sub="Currently active"
             accent={C.accent}
           />
         </div>
