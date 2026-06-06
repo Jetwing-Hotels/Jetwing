@@ -15,8 +15,8 @@ import { makeAdmin, checkSecret } from '../_shared/supabaseAdmin.ts';
 import { makeClient, generateJson } from '../_shared/claude.ts';
 import { buildEmailPrompt, validateEmail } from '../_shared/emails.ts';
 
-// deno-lint-ignore no-explicit-any
-type Row = Record<string, any>;
+// deno-lint-ignore no-explicit-unknown
+type Row = Record<string, unknown>;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
