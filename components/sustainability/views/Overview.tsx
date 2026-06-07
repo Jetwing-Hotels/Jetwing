@@ -21,6 +21,8 @@ import {
 } from "../data";
 import { Card, KpiCard, SectionLabel, ProgressBar, PageHeader } from "../ui";
 import { useSustainabilityKpis } from "@/app/hooks/useSustainabilityKpis";
+import { useEsgPillars } from "@/app/hooks/useEsgPillars";
+import { useHotelPerformanceComparison } from "@/app/hooks/useHotelPerformanceComparison";
 
 const insightMeta: Record<
   Insight["type"],
@@ -127,7 +129,7 @@ export default function Overview({
   endYear?: number;
   endMonth?: number;
 }) {
-  const ranked = [...hotelPerformance].sort((a, b) => b.score - a.score);
+  // const ranked = [...hotelPerformance].sort((a, b) => b.score - a.score);
   // Defaults when no props provided
   const now = new Date();
   const sYear = startYear ?? now.getFullYear();
@@ -135,7 +137,28 @@ export default function Overview({
   const eYear = endYear ?? now.getFullYear();
   const eMonth = endMonth ?? now.getMonth() + 1;
   const selectedPropertyId: string | undefined = propertyId ?? undefined;
-
+  const {
+    data: ranked,
+    isLoading: rankedLoading,
+    error: rankedError,
+  } = useHotelPerformanceComparison({
+    propertyId: selectedPropertyId,
+    startYear: sYear,
+    startMonth: sMonth,
+    endYear: eYear,
+    endMonth: eMonth,
+  });
+  const {
+    data: esgPillars,
+    isLoading: esgPillarsLoading,
+    error: esgPillarsError,
+  } = useEsgPillars({
+    propertyId: selectedPropertyId,
+    startYear: sYear,
+    startMonth: sMonth,
+    endYear: eYear,
+    endMonth: eMonth,
+  });
   const {
     data: KPIS,
     isLoading: kpisLoading,
@@ -168,6 +191,8 @@ export default function Overview({
     C.blueDark,
   ];
 
+  const showHotelComparison =
+    !selectedPropertyId || selectedPropertyId === "all";
   return (
     <div>
       <section data-export-block="true">
@@ -203,6 +228,15 @@ export default function Overview({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div className="space-y-4">
             <SectionLabel>ESG Pillar Scores</SectionLabel>
+            {esgPillarsLoading ? (
+              <div className="text-sm" style={{ color: C.subtext }}>
+                Loading ESG pillar scores...
+              </div>
+            ) : esgPillarsError ? (
+              <div className="text-sm" style={{ color: C.red }}>
+                {esgPillarsError}
+              </div>
+            ) : null}
             {esgPillars.map((p) => (
               <Card key={p.name} className="p-4" accent={p.color}>
                 <div className="flex items-end justify-between">
@@ -216,26 +250,12 @@ export default function Overview({
                     </span>
                   </p>
                 </div>
+
                 <div className="mt-3">
                   <ProgressBar value={p.score} color={p.color} />
                 </div>
               </Card>
             ))}
-            <Card className="p-4" accent={C.secondary}>
-              <div className="flex items-center gap-2 mb-1">
-                <Trophy className="w-4 h-4" style={{ color: C.secondary }} />
-                <p className="text-sm font-bold" style={{ color: C.text }}>
-                  Recognition
-                </p>
-              </div>
-              <p
-                className="text-xs leading-relaxed"
-                style={{ color: C.subtext }}
-              >
-                2 international climate action awards · PATA Gold · Best
-                Corporate Citizen (Leisure Sector) 2024
-              </p>
-            </Card>
           </div>
 
           <div className="lg:col-span-2">
@@ -257,99 +277,101 @@ export default function Overview({
         </div>
       </section>
 
-      <section data-export-block="true">
-        {/* Hotel comparison + ranking */}
-        <SectionLabel>Hotel Performance Comparison & Ranking</SectionLabel>
-        <Card className="overflow-hidden mb-2">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ backgroundColor: C.bg }}>
-                  {[
-                    "Rank",
-                    "Hotel",
-                    "Sustainability",
-                    "Energy Eff.",
-                    "Water Eff.",
-                    "Carbon (tCO₂)",
-                    "Community",
-                    "ESG Rating",
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      className="text-left py-3 px-4 text-[11px] font-semibold uppercase tracking-wider"
-                      style={{ color: C.subtext }}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {ranked.map((row: HotelPerf, i) => (
-                  <tr
-                    key={row.name}
-                    style={{ borderTop: `1px solid ${C.border}` }}
-                  >
-                    <td className="py-3 px-4">
-                      <span
-                        className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold"
-                        style={{
-                          backgroundColor:
-                            i === 0 ? C.accent : i < 3 ? C.softGreen : C.bg,
-                          color:
-                            i === 0 ? "#fff" : i < 3 ? C.primary : C.subtext,
-                        }}
+      {showHotelComparison && (
+        <section data-export-block="true">
+          {/* Hotel comparison + ranking */}
+          <SectionLabel>Hotel Performance Comparison & Ranking</SectionLabel>
+          <Card className="overflow-hidden mb-2">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ backgroundColor: C.bg }}>
+                    {[
+                      "Rank",
+                      "Hotel",
+                      "Sustainability",
+                      "Energy Eff.",
+                      "Water Eff.",
+                      "Carbon (tCO₂)",
+                      "Community",
+                      "Internal ESG Grade",
+                    ].map((h) => (
+                      <th
+                        key={h}
+                        className="text-left py-3 px-4 text-[11px] font-semibold uppercase tracking-wider"
+                        style={{ color: C.subtext }}
                       >
-                        {i + 1}
-                      </span>
-                    </td>
-                    <td
-                      className="py-3 px-4 font-semibold"
-                      style={{ color: C.text }}
-                    >
-                      {row.name}
-                    </td>
-                    <td className="py-3 px-4 w-40">
-                      <ScoreBar value={row.score} color={C.primary} />
-                    </td>
-                    <td className="py-3 px-4 w-32">
-                      <ScoreBar value={row.energy} color={C.accent} />
-                    </td>
-                    <td className="py-3 px-4 w-32">
-                      <ScoreBar value={row.water} color={C.blue} />
-                    </td>
-                    <td
-                      className="py-3 px-4 font-medium"
-                      style={{ color: C.text }}
-                    >
-                      {row.carbon.toLocaleString()}
-                    </td>
-                    <td className="py-3 px-4 w-32">
-                      <ScoreBar value={row.community} color={C.teal} />
-                    </td>
-                    <td className="py-3 px-4">
-                      <span
-                        className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold"
-                        style={{
-                          color: esgColor(row.esg),
-                          backgroundColor: `${esgColor(row.esg)}1A`,
-                        }}
-                      >
-                        {row.esg}
-                      </span>
-                    </td>
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-        <p className="text-xs" style={{ color: C.muted }}>
-          Ranking is weighted across sustainability score, resource efficiency,
-          carbon footprint and community impact.
-        </p>
-      </section>
+                </thead>
+                <tbody>
+                  {ranked.map((row: HotelPerf, i) => (
+                    <tr
+                      key={row.name}
+                      style={{ borderTop: `1px solid ${C.border}` }}
+                    >
+                      <td className="py-3 px-4">
+                        <span
+                          className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold"
+                          style={{
+                            backgroundColor:
+                              i === 0 ? C.accent : i < 3 ? C.softGreen : C.bg,
+                            color:
+                              i === 0 ? "#fff" : i < 3 ? C.primary : C.subtext,
+                          }}
+                        >
+                          {i + 1}
+                        </span>
+                      </td>
+                      <td
+                        className="py-3 px-4 font-semibold"
+                        style={{ color: C.text }}
+                      >
+                        {row.name}
+                      </td>
+                      <td className="py-3 px-4 w-40">
+                        <ScoreBar value={row.score} color={C.primary} />
+                      </td>
+                      <td className="py-3 px-4 w-32">
+                        <ScoreBar value={row.energy} color={C.accent} />
+                      </td>
+                      <td className="py-3 px-4 w-32">
+                        <ScoreBar value={row.water} color={C.blue} />
+                      </td>
+                      <td
+                        className="py-3 px-4 font-medium"
+                        style={{ color: C.text }}
+                      >
+                        {row.carbon.toLocaleString()}
+                      </td>
+                      <td className="py-3 px-4 w-32">
+                        <ScoreBar value={row.community} color={C.teal} />
+                      </td>
+                      <td className="py-3 px-4">
+                        <span
+                          className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold"
+                          style={{
+                            color: esgColor(row.esg),
+                            backgroundColor: `${esgColor(row.esg)}1A`,
+                          }}
+                        >
+                          {row.esg}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+          <p className="text-xs" style={{ color: C.muted }}>
+            Ranking is weighted across sustainability score, resource
+            efficiency, carbon footprint and community impact.
+          </p>
+        </section>
+      )}
     </div>
   );
 }

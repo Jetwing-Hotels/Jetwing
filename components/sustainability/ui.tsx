@@ -236,6 +236,78 @@ export function ProgressBar({
 }
 
 // ── KPI card (full featured) ─────────────────────────────────────────────────
+// export function KpiCard({
+//   label,
+//   value,
+//   unit,
+//   delta,
+//   dir,
+//   good,
+//   prev,
+//   progress,
+//   target,
+//   spark,
+//   color = C.primary,
+// }: {
+//   label: string;
+//   value: string;
+//   unit?: string;
+//   delta: string;
+//   dir: Trend;
+//   good: boolean;
+//   prev: string;
+//   progress: number;
+//   target: string;
+//   spark: number[];
+//   color?: string;
+// }) {
+//   return (
+//     <Card className="p-4 flex flex-col gap-3">
+//       <div className="flex items-start justify-between gap-2">
+//         <p
+//           className="text-[11px] font-semibold uppercase tracking-wider leading-tight"
+//           style={{ color: C.subtext }}
+//         >
+//           {label}
+//         </p>
+//         <TrendBadge delta={delta} dir={dir} good={good} />
+//       </div>
+//       <div className="flex items-end justify-between gap-2">
+//         <div>
+//           <p
+//             className="text-2xl font-bold leading-none"
+//             style={{ color: C.text }}
+//           >
+//             {value}
+//             {unit && (
+//               <span
+//                 className="text-sm font-semibold ml-1"
+//                 style={{ color: C.subtext }}
+//               >
+//                 {unit}
+//               </span>
+//             )}
+//           </p>
+//           <p className="text-[11px] mt-1.5" style={{ color: C.muted }}>
+//             vs {prev}
+//           </p>
+//         </div>
+//         <Sparkline data={spark} color={good ? color : C.red} />
+//       </div>
+//       <div>
+//         <div className="flex items-center justify-between mb-1">
+//           <span className="text-[10px] font-medium" style={{ color: C.muted }}>
+//             Target: {target}
+//           </span>
+//           <span className="text-[10px] font-bold" style={{ color }}>
+//             {progress}%
+//           </span>
+//         </div>
+//         <ProgressBar value={progress} color={color} />
+//       </div>
+//     </Card>
+//   );
+// }
 export function KpiCard({
   label,
   value,
@@ -246,7 +318,7 @@ export function KpiCard({
   prev,
   progress,
   target,
-  spark,
+  spark = [],
   color = C.primary,
 }: {
   label: string;
@@ -256,11 +328,13 @@ export function KpiCard({
   dir: Trend;
   good: boolean;
   prev: string;
-  progress: number;
-  target: string;
-  spark: number[];
+  progress?: number;
+  target?: string;
+  spark?: number[];
   color?: string;
 }) {
+  const hasTarget = typeof progress === "number" && Boolean(target);
+
   return (
     <Card className="p-4 flex flex-col gap-3">
       <div className="flex items-start justify-between gap-2">
@@ -272,6 +346,7 @@ export function KpiCard({
         </p>
         <TrendBadge delta={delta} dir={dir} good={good} />
       </div>
+
       <div className="flex items-end justify-between gap-2">
         <div>
           <p
@@ -288,23 +363,34 @@ export function KpiCard({
               </span>
             )}
           </p>
+
           <p className="text-[11px] mt-1.5" style={{ color: C.muted }}>
             vs {prev}
           </p>
         </div>
-        <Sparkline data={spark} color={good ? color : C.red} />
+
+        {spark.length > 0 && (
+          <Sparkline data={spark} color={good ? color : C.red} />
+        )}
       </div>
-      <div>
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-[10px] font-medium" style={{ color: C.muted }}>
-            Target: {target}
-          </span>
-          <span className="text-[10px] font-bold" style={{ color }}>
-            {progress}%
-          </span>
+
+      {hasTarget && (
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <span
+              className="text-[10px] font-medium"
+              style={{ color: C.muted }}
+            >
+              Target: {target}
+            </span>
+            <span className="text-[10px] font-bold" style={{ color }}>
+              {progress}%
+            </span>
+          </div>
+
+          <ProgressBar value={progress} color={color} />
         </div>
-        <ProgressBar value={progress} color={color} />
-      </div>
+      )}
     </Card>
   );
 }
