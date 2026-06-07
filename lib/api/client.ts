@@ -44,8 +44,13 @@ export const guestApi = {
     api<{ data: SeasonalOffer }>(`/offers/${id}/reject`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
   activateOffer: (id: string, body: { valid_from?: string; valid_to?: string } = {}) =>
     api<{ data: SeasonalOffer }>(`/offers/${id}/activate`, { method: 'PATCH', body: JSON.stringify(body) }),
-  generateOffers: (body: { month: number; year: number; property_id?: string }) =>
-    api<{ data: unknown }>(`/offers/generate`, { method: 'POST', body: JSON.stringify(body) }),
+  generateOffers: (body: {
+    month: number;
+    year: number;
+    property_id?: string;
+    business_goal?: string;
+    additional_instructions?: string;
+  }) => api<{ data: unknown }>(`/offers/generate`, { method: 'POST', body: JSON.stringify(body) }),
   listRuns: () => api<Paginated<OfferGenerationRun>>(`/offers/runs`),
 
   // ── Campaigns ───────────────────────────────────────────────────────────────

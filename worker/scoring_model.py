@@ -27,13 +27,19 @@ internally, so we send raw numbers (do NOT pre-transform here). 18 features, in 
   16   high_season_preference   0 / 1
   17   domestic_guest           0 / 1
 
-Endpoint I/O (HuggingFace Inference Endpoint, custom handler):
-  POST {"inputs": [[...18 floats...], ...]}
-   ->  {"scores": [87.3, ...], "top_10_pct": [true, ...]}   # scores are 0–100 percentiles
+The model is deployed as a Gradio Space (HiruniAyesha/jetwing-customer-ranker),
+api_name "/predict": one observation per call, returning {"score", "segment"}.
+A legacy dedicated Inference Endpoint (batch {"inputs": [[...]]} -> {"scores": [...]})
+is still supported via HF_SCORING_ENDPOINT for backward compatibility.
 """
+import json
+import logging
+
 import requests
 
 import config
+
+log = logging.getLogger(__name__)
 
 # Names in the model's order — for reference / logging only (vector is built below).
 FEATURE_ORDER = [
@@ -96,7 +102,37 @@ def tier_for(score: float) -> str:
     return "Standard"
 
 
-# ── HuggingFace inference (split-on-failure to isolate bad records) ───────────
+# ── Gradio Space (one observation per /predict call) ──────────────────────────
+_space_client = None
+
+
+def _get_space_client():
+    """Lazily build (and cache) the gradio_client for the deployed Space."""
+    global _space_client
+    if _space_client is None:
+        from gradio_client import Client  # imported lazily so it's optional
+
+        _space_client = Client(config.HF_SCORING_SPACE, hf_token=config.HF_API_TOKEN)
+    return _space_client
+
+
+def _space_score_one(vector: list[float]) -> float:
+    """Score a single 18-feature vector via the Space; 0.0 on any failure."""
+    try:
+        result = _get_space_client().predict(*vector, api_name="/predict")
+        if isinstance(result, str):
+            result = json.loads(result)
+        return float(result["score"])
+    except Exception as exc:  # noqa: BLE001 — isolate one bad row, keep the batch
+        log.warning("Space scoring failed for a row: %s", exc)
+        return 0.0
+
+
+def _space_score(vectors: list[list[float]]) -> list[float]:
+    return [_space_score_one(v) for v in vectors]
+
+
+# ── Legacy Inference Endpoint (split-on-failure to isolate bad records) ───────
 def _hf_call(vectors: list[list[float]]) -> list[float]:
     resp = requests.post(
         config.HF_SCORING_ENDPOINT,
@@ -133,11 +169,15 @@ def _local(row: dict) -> float:
 
 
 def score_rows(rows: list[dict]) -> list[float]:
-    """Score customer_features rows. Uses the HF model if configured, else local heuristic."""
+    """Score customer_features rows. Prefers the Space, then the legacy endpoint,
+    then a local RFM heuristic."""
+    vectors = [build_vector(r) for r in rows]
+    if config.HF_SCORING_SPACE:
+        return _space_score(vectors)
     if config.HF_SCORING_ENDPOINT and config.HF_API_TOKEN:
-        return _hf_safe([build_vector(r) for r in rows])
+        return _hf_safe(vectors)
     return [_local(r) for r in rows]
 
 
 def using_model() -> bool:
-    return bool(config.HF_SCORING_ENDPOINT and config.HF_API_TOKEN)
+    return bool(config.HF_SCORING_SPACE or (config.HF_SCORING_ENDPOINT and config.HF_API_TOKEN))

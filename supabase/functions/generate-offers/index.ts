@@ -106,6 +106,9 @@ Deno.serve(async (req) => {
         history: history ?? [],
         month,
         year,
+        businessGoal: typeof body.business_goal === 'string' ? body.business_goal : null,
+        additionalInstructions:
+          typeof body.additional_instructions === 'string' ? body.additional_instructions : null,
       });
 
       const { data: offers, tokensIn, tokensOut } = await generateJson({

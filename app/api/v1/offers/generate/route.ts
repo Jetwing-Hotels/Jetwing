@@ -10,6 +10,8 @@ const bodySchema = z.object({
   month: z.number().int().min(1).max(12),
   year: z.number().int().min(2024).max(2100),
   property_id: z.uuid().optional(),
+  business_goal: z.string().trim().max(2000).optional(),
+  additional_instructions: z.string().trim().max(2000).optional(),
 });
 
 /**
