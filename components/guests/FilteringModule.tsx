@@ -1,9 +1,18 @@
 "use client"
 
-import React, { useState, useMemo } from 'react';
-import { Search, Calendar, Filter, X, ChevronRight, ChevronLeft, ChevronDown, User, Mail, Phone, Globe, Hotel, CalendarDays, ExternalLink, Award, CreditCard, Activity, Check } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Search, Calendar, Filter, X, ChevronRight, ChevronLeft, ChevronDown, User, Mail, Phone, Globe, Hotel, CalendarDays, ExternalLink, Award, CreditCard, Activity, Check, Sparkles } from 'lucide-react';
 import { PASSENGERS } from '@/lib/mock-data';
 import { cn } from '@/lib/utils';
+import { buildGuestVector, scoreGuests, type GuestScore } from '@/lib/guestScoring';
+
+// Tier styling for the model's 0–100 score (top 10% ≈ Platinum).
+const TIER_STYLE: Record<string, { badge: string; bar: string }> = {
+  Platinum: { badge: 'bg-violet-100 text-violet-700', bar: '#7C3AED' },
+  Gold: { badge: 'bg-amber-100 text-amber-700', bar: '#D4AF37' },
+  Silver: { badge: 'bg-slate-200 text-slate-700', bar: '#94A3B8' },
+  Standard: { badge: 'bg-slate-100 text-slate-500', bar: '#CBD5E1' },
+};
 
 // Constants for Jetwing Branding
 const COLORS = {
@@ -43,6 +52,9 @@ export default function FilteringModule() {
 
   // Sorting State
   const [sortConfig, setSortConfig] = useState<{ key: keyof typeof PASSENGERS[0]; direction: 'asc' | 'desc' } | null>(null);
+
+  // Live model scores keyed by passenger id (undefined = not yet scored, null = failed).
+  const [scores, setScores] = useState<Record<number, GuestScore | null>>({});
 
   // Filtering Logic
   const filteredPassengers = useMemo(() => {
@@ -105,6 +117,30 @@ export default function FilteringModule() {
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   );
+
+  // Auto-score the visible rows via the customer-ranker model. Only fetches ids
+  // not already scored, so paging back is instant and re-renders don't refetch.
+  const pageKey = paginatedPassengers.map((p) => p.id).join(',');
+  useEffect(() => {
+    const missing = paginatedPassengers.filter((p) => !(p.id in scores));
+    if (missing.length === 0) return;
+
+    let cancelled = false;
+    const vectors = missing.map((p) => buildGuestVector(p));
+    scoreGuests(vectors)
+      .then((results) => {
+        if (cancelled) return;
+        setScores((prev) => {
+          const next = { ...prev };
+          missing.forEach((p, i) => { next[p.id] = results[i]; });
+          return next;
+        });
+      })
+      .catch(() => { /* leave unscored — retries when the page is revisited */ });
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageKey]);
 
   const toggleFilter = (category: string, value: string) => {
     setActiveFilters(prev => {
@@ -271,6 +307,9 @@ export default function FilteringModule() {
                     </div>
                   </th>
                 ))}
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider" style={{ color: COLORS.muted }}>
+                  <div className="flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" />Score</div>
+                </th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-right" style={{ color: COLORS.muted }}>Actions</th>
               </tr>
             </thead>
@@ -304,6 +343,33 @@ export default function FilteringModule() {
                             {p.guestType}
                         </span>
                     </td>
+                    <td className="px-6 py-4">
+                      {(() => {
+                        const s = scores[p.id];
+                        if (s === undefined) {
+                          return <div className="h-8 w-20 rounded-lg bg-slate-100 animate-pulse" />;
+                        }
+                        if (s === null) {
+                          return <span className="text-xs font-medium" style={{ color: COLORS.muted }}>—</span>;
+                        }
+                        const style = TIER_STYLE[s.tier] ?? TIER_STYLE.Standard;
+                        return (
+                          <div className="flex flex-col gap-1 w-24" title={`${s.segment} · ${s.score.toFixed(1)}/100`}>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-bold tabular-nums" style={{ color: COLORS.text }}>
+                                {s.score.toFixed(0)}
+                              </span>
+                              <span className={cn('px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider', style.badge)}>
+                                {s.tier}
+                              </span>
+                            </div>
+                            <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                              <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, Math.max(0, s.score))}%`, backgroundColor: style.bar }} />
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </td>
                     <td className="px-6 py-4 text-right">
                       <button
                         onClick={() => {
@@ -320,7 +386,7 @@ export default function FilteringModule() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={9} className="px-6 py-20 text-center">
+                  <td colSpan={10} className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center gap-2">
                         <div className="p-4 rounded-full bg-slate-50">
                             <Search className="w-8 h-8 text-slate-300" />

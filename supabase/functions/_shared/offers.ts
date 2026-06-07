@@ -80,8 +80,11 @@ export function buildOfferPrompt(args: {
   history: Row[];
   month: number;
   year: number;
+  businessGoal?: string | null;
+  additionalInstructions?: string | null;
 }): { system: SystemBlock[]; userText: string } {
-  const { property, prompt, seasonal, history, month, year } = args;
+  const { property, prompt, seasonal, history, month, year, businessGoal, additionalInstructions } =
+    args;
 
   const system: SystemBlock[] = [
     // Stable prefix — cache breakpoint here (shared across all properties/months).
@@ -135,7 +138,24 @@ export function buildOfferPrompt(args: {
       )
     : '(no historical records on file — base predictions on the property profile and season, and keep them conservative)';
 
+  // Operator-supplied directive steers the run toward a specific goal. Placed
+  // first so Claude weights it highly, but offers must still stay data-grounded.
+  const directiveText =
+    businessGoal?.trim() || additionalInstructions?.trim()
+      ? [
+          'STRATEGIC DIRECTIVE (operator priority — honour this while staying grounded in the data below)',
+          businessGoal?.trim() ? `Business goal: ${businessGoal.trim()}` : null,
+          additionalInstructions?.trim()
+            ? `Additional instructions: ${additionalInstructions.trim()}`
+            : null,
+          '',
+        ]
+          .filter((l) => l !== null)
+          .join('\n')
+      : '';
+
   const userText = [
+    directiveText,
     `TARGET MONTH: ${MONTHS[month]} ${year}`,
     '',
     'SEASONAL CONTEXT',
