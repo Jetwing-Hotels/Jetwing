@@ -1,7 +1,7 @@
 import type { SystemBlock } from './claude.ts';
 
-// deno-lint-ignore no-explicit-any
-type Row = Record<string, any>;
+// deno-lint-ignore no-explicit-unknown
+type Row = Record<string, unknown>;
 
 const OFFER_TYPES = ['Accommodation', 'Package', 'Experience', 'F&B', 'Wellness'] as const;
 const DISCOUNT_TYPES = ['Percentage', 'Complimentary', 'Value_Add', 'Rate_Plan'] as const;

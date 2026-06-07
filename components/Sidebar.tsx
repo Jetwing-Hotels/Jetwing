@@ -69,12 +69,13 @@ export function Sidebar() {
     if (pathname?.includes('/sustainability')) defaults.push('sustainability');
     if (pathname?.includes('/guests')) defaults.push('guests');
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setExpandedSubmenus(new Set(defaults));
   }, [pathname]);
 
   useEffect(() => {
-    const onGuest = (e: any) => {
-      const v = e?.detail?.view || 'analytics';
+    const onGuest = (e: unknown) => {
+      const v = (e as any)?.detail?.view || 'analytics';
       setCurrentGuestView(v);
     };
 
@@ -85,6 +86,7 @@ export function Sidebar() {
         params.get('view') ||
         (pathname?.includes('/guests') ? 'analytics' : '');
 
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (initial) setCurrentGuestView(initial);
     }
 

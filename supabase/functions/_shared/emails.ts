@@ -1,7 +1,7 @@
 import type { SystemBlock } from './claude.ts';
 
-// deno-lint-ignore no-explicit-any
-type Row = Record<string, any>;
+// deno-lint-ignore no-explicit-unknown
+type Row = Record<string, unknown>;
 
 export interface EmailDraft {
   subject_line: string;

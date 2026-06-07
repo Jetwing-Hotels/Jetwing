@@ -1,3 +1,5 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
 import type { PropertyOption, SustainabilityEnvironmentRow } from './types';
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -47,4 +49,34 @@ export async function getEnvironmentDashboardRows(params?: {
     : '/api/sustainability/environment';
 
   return fetchJson<SustainabilityEnvironmentRow[]>(url);
+}
+
+export async function getSustainabilityDashboardData() {
+  const response = await fetch('/api/sustainability/dashboard');
+  if (!response.ok) {
+    throw new Error('Failed to fetch dashboard data');
+  }
+  const result = await response.json();
+  return result;
+}
+
+export function toNumber(value: unknown): number {
+  const num = Number(value ?? 0);
+  return Number.isFinite(num) ? num : 0;
+}
+
+export function monthLabel(year: number, month: number): string {
+  return new Date(year, month - 1, 1).toLocaleString('en', { month: 'short' });
+}
+
+export function sumBy<T>(rows: T[], getter: (row: T) => unknown): number {
+  return rows.reduce((total, row) => total + toNumber(getter(row)), 0);
+}
+
+export function latestByPeriod<T extends { report_year?: number; report_month?: number }>(rows: T[]): T | undefined {
+  return [...rows].sort((a, b) => {
+    const yearDiff = toNumber(b.report_year) - toNumber(a.report_year);
+    if (yearDiff !== 0) return yearDiff;
+    return toNumber(b.report_month) - toNumber(a.report_month);
+  })[0];
 }

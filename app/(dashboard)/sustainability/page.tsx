@@ -7,7 +7,7 @@ import { exportSustainabilityReport } from '@/components/sustainability/exportRe
 import Overview from '@/components/sustainability/views/Overview';
 import { ClimateAction, EnergyManagement, WaterManagement, WasteManagement, Biodiversity } from '@/components/sustainability/views/Environment';
 import { CommunityImpact, EsgReports, RiskManagement, SustainabilityGoals } from '@/components/sustainability/views/SocialGov';
-import { getEnvironmentDashboardRows, getProperties } from '@/lib/sustainability/api';
+import { getEnvironmentDashboardRows, getProperties, getSustainabilityDashboardData } from '@/lib/sustainability/api';
 import type { PropertyOption, SustainabilityEnvironmentRow } from '@/lib/sustainability/types';
 
 type ViewId = 'overview' | 'climate' | 'energy' | 'water' | 'waste' | 'biodiversity' | 'community' | 'esg' | 'risk' | 'goals';
@@ -66,6 +66,12 @@ export default function SustainabilityPage() {
   const [properties, setProperties] = useState<PropertyOption[]>([]);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('all');
   const [environmentRows, setEnvironmentRows] = useState<SustainabilityEnvironmentRow[]>([]);
+  const [biodiversityRows, setBiodiversityRows] = useState<Record<string, unknown>[]>([]);
+  const [socialRows, setSocialRows] = useState<Record<string, unknown>[]>([]);
+  const [riskRows, setRiskRows] = useState<Record<string, unknown>[]>([]);
+  const [goalRows, setGoalRows] = useState<Record<string, unknown>[]>([]);
+  const [governanceRows, setGovernanceRows] = useState<Record<string, unknown>[]>([]);
+  const [esgRows, setEsgRows] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [range, setRange] = useState<string>(DATE_RANGES[2]);
@@ -88,13 +94,22 @@ export default function SustainabilityPage() {
         setLoading(true);
         setError(null);
 
-        const [propertyRows, dashboardRows] = await Promise.all([
+
+        const [propertyRows, dashboardRows, dashboardData] = await Promise.all([
           getProperties(),
           getEnvironmentDashboardRows(),
+          getSustainabilityDashboardData(),
         ]);
 
         setProperties(propertyRows);
         setEnvironmentRows(dashboardRows);
+        setBiodiversityRows((dashboardData?.biodiversity as Record<string, unknown>[]) || []);
+        setSocialRows((dashboardData?.social as Record<string, unknown>[]) || []);
+        setRiskRows((dashboardData?.risks as Record<string, unknown>[]) || []);
+        setGoalRows((dashboardData?.goals as Record<string, unknown>[]) || []);
+        setGovernanceRows((dashboardData?.governance as Record<string, unknown>[]) || []);
+        setEsgRows((dashboardData?.esg as Record<string, unknown>[]) || []);
+
       } catch (err) {
         console.error(err);
         setError('Failed to load sustainability data from Supabase.');
@@ -127,6 +142,12 @@ export default function SustainabilityPage() {
     selectedPropertyId === 'all'
       ? environmentRows
       : environmentRows.filter((row) => row.property_id === selectedPropertyId);
+
+
+  function filterByProperty<T extends { property_id?: string }>(rows: T[]) {
+    if (selectedPropertyId === 'all') return rows;
+    return rows.filter((row) => row.property_id === selectedPropertyId);
+  }
 
   const handleExportReport = async () => {
     if (!exportRef.current || isExporting) {
@@ -164,21 +185,21 @@ export default function SustainabilityPage() {
       );
     }
 
+
     switch (view) {
       case 'overview': return <Overview />;
       case 'climate': return <ClimateAction rows={visibleRows} />;
       case 'energy': return <EnergyManagement rows={visibleRows} />;
       case 'water': return <WaterManagement rows={visibleRows} />;
       case 'waste': return <WasteManagement rows={visibleRows} />;
-      case 'biodiversity': return <Biodiversity />;
-      case 'community': return <CommunityImpact />;
-      case 'esg': return <EsgReports />;
-      case 'risk': return <RiskManagement />;
-      case 'goals': return <SustainabilityGoals />;
+      case 'biodiversity': return <Biodiversity rows={filterByProperty(biodiversityRows)} />;
+      case 'community': return <CommunityImpact rows={filterByProperty(socialRows)} />;
+      case 'esg': return <EsgReports esgRows={filterByProperty(esgRows)} governanceRows={filterByProperty(governanceRows)} />;
+      case 'risk': return <RiskManagement rows={filterByProperty(riskRows)} />;
+      case 'goals': return <SustainabilityGoals rows={filterByProperty(goalRows)} />;
     }
   };
-
-  return (
+return (
     <div className="flex-1 min-w-0 flex flex-col">
       {/* Top filter bar — fixed */}
       <div className="fixed top-0 left-64 right-0 z-20 flex items-center justify-between gap-4 px-8 py-3 border-b bg-white" style={{ borderColor: C.border }}>
