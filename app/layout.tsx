@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   title: "JetMind | AI-Powered Hospitality Decision Support",
   description: "Decision-support platform for Jetwing Symphony PLC",
   icons: {
-    icon: "/jetwing-logo.svg",
+    icon: "/jetwing-logo.png",
   },
 };
 
@@ -29,7 +29,8 @@ export default function RootLayout({
     <html lang="en" className="h-full">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-full text-slate-900`}
-        style={{ backgroundColor: '#ffffff' }}
+        style={{ backgroundColor: "#ffffff" }}
+        suppressHydrationWarning
       >
         {children}
       </body>

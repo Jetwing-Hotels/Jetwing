@@ -9,12 +9,16 @@ import {
   PiggyBank,
   Trophy,
   Sparkles,
+  ExternalLink,
+  Loader,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   C,
   KPIS,
   hotelPerformance,
-  aiInsights,
+  // aiInsights as staticInsights,
   esgPillars,
   type Insight,
   type HotelPerf,
@@ -23,6 +27,8 @@ import { Card, KpiCard, SectionLabel, ProgressBar, PageHeader } from "../ui";
 import { useSustainabilityKpis } from "@/app/hooks/useSustainabilityKpis";
 import { useEsgPillars } from "@/app/hooks/useEsgPillars";
 import { useHotelPerformanceComparison } from "@/app/hooks/useHotelPerformanceComparison";
+import { useSustainabilityNews } from "@/app/hooks/useSustainabilityNews";
+import { useSustainabilityInsights } from "@/app/hooks/useSustainabilityInsights";
 
 const insightMeta: Record<
   Insight["type"],
@@ -74,6 +80,59 @@ function InsightCard({ insight }: { insight: Insight }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function NewsCard({
+  title,
+  source,
+  publishedAt,
+  description,
+  url,
+  image,
+}: {
+  title: string;
+  source: string;
+  publishedAt: string;
+  description: string;
+  url: string;
+  image?: string;
+}) {
+  const date = new Date(publishedAt).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="rounded-lg border p-3 bg-white hover:bg-opacity-75 transition-colors block h-full"
+      style={{ borderColor: C.border }}
+    >
+      {image && (
+        <div className="w-full h-32 bg-gray-200 rounded-md mb-3 overflow-hidden">
+          <img src={image} alt={title} className="w-full h-full object-cover" />
+        </div>
+      )}
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <p className="text-xs font-semibold" style={{ color: C.primary }}>
+          {source}
+        </p>
+        <ExternalLink className="w-3 h-3 shrink-0" style={{ color: C.muted }} />
+      </div>
+      <p className="text-xs font-bold mb-1" style={{ color: C.text }}>
+        {title}
+      </p>
+      <p className="text-xs line-clamp-2 mb-2" style={{ color: C.subtext }}>
+        {description}
+      </p>
+      <p className="text-[10px]" style={{ color: C.muted }}>
+        {date}
+      </p>
+    </a>
   );
 }
 
@@ -137,6 +196,7 @@ export default function Overview({
   const eYear = endYear ?? now.getFullYear();
   const eMonth = endMonth ?? now.getMonth() + 1;
   const selectedPropertyId: string | undefined = propertyId ?? undefined;
+  const [activeNewsIndex, setActiveNewsIndex] = React.useState(0);
   const {
     data: ranked,
     isLoading: rankedLoading,
@@ -171,6 +231,58 @@ export default function Overview({
     endMonth: eMonth,
   });
 
+  const {
+    data: newsArticles,
+    isLoading: newsLoading,
+    error: newsError,
+  } = useSustainabilityNews({
+    query: "Sri Lanka hotels sustainability",
+    limit: 5,
+  });
+
+  const {
+    insights: generatedInsights,
+    isLoading: insightsLoading,
+    error: insightsError,
+    generateInsights,
+  } = useSustainabilityInsights();
+
+  const displayInsights = generatedInsights ?? [];
+  // const displayInsights = generatedInsights
+  //   ? [...generatedInsights, ...staticInsights]
+  //   : staticInsights;
+
+  React.useEffect(() => {
+    setActiveNewsIndex((current) => {
+      if (newsArticles.length === 0) {
+        return 0;
+      }
+
+      return Math.min(current, newsArticles.length - 1);
+    });
+  }, [newsArticles.length]);
+
+  const handleGenerateInsights = async () => {
+    const metricsObj: Record<string, number> = {};
+    KPIS.forEach((kpi) => {
+      const value = parseFloat(kpi.value.replace(/,/g, ""));
+      if (!Number.isNaN(value)) {
+        metricsObj[kpi.label] = value;
+      }
+    });
+
+    await generateInsights(
+      metricsObj,
+      newsArticles.map((a) => ({
+        title: a.title,
+        source: a.source,
+        description: a.description,
+        url: a.url,
+        publishedAt: a.publishedAt,
+      })),
+    );
+  };
+
   if (kpisLoading) {
     return (
       <div className="p-6 text-sm" style={{ color: C.subtext }}>
@@ -197,6 +309,21 @@ export default function Overview({
 
   const showHotelComparison =
     !selectedPropertyId || selectedPropertyId === "all";
+
+  const displayNews = newsArticles[activeNewsIndex];
+
+  const handlePreviousNews = () => {
+    if (newsArticles.length <= 1) return;
+    setActiveNewsIndex(
+      (current) => (current - 1 + newsArticles.length) % newsArticles.length,
+    );
+  };
+
+  const handleNextNews = () => {
+    if (newsArticles.length <= 1) return;
+    setActiveNewsIndex((current) => (current + 1) % newsArticles.length);
+  };
+
   return (
     <div>
       <section data-export-block="true">
@@ -204,6 +331,12 @@ export default function Overview({
           title="Dashboard Overview"
           subtitle="Sustainability performance at a glance"
         />
+
+        {newsError && (
+          <div className="mb-4 p-3 rounded text-xs" style={{ color: C.red }}>
+            {newsError}
+          </div>
+        )}
 
         {/* KPI grid */}
         <SectionLabel>Key Performance Indicators</SectionLabel>
@@ -228,7 +361,7 @@ export default function Overview({
       </section>
 
       <section data-export-block="true">
-        {/* ESG pillars + AI insights */}
+        {/* ESG pillars + news + AI insights */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div className="space-y-4">
             <SectionLabel>ESG Pillar Scores</SectionLabel>
@@ -262,20 +395,140 @@ export default function Overview({
             ))}
           </div>
 
-          <div className="lg:col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="w-4 h-4" style={{ color: C.primary }} />
-              <p
-                className="text-xs font-bold uppercase tracking-wider"
-                style={{ color: C.subtext }}
-              >
-                AI Sustainability Insights
-              </p>
+          <div className="lg:col-span-2 grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
+            <div className="h-full flex flex-col">
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" style={{ color: C.primary }} />
+                  <p
+                    className="text-xs font-bold uppercase tracking-wider"
+                    style={{ color: C.subtext }}
+                  >
+                    Latest Sustainability News
+                  </p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={handlePreviousNews}
+                    disabled={newsLoading || newsArticles.length <= 1}
+                    className="w-8 h-8 rounded-full border flex items-center justify-center transition-colors disabled:opacity-40"
+                    style={{ borderColor: C.border, backgroundColor: "#fff" }}
+                    aria-label="Previous news article"
+                  >
+                    <ChevronLeft
+                      className="w-4 h-4"
+                      style={{ color: C.text }}
+                    />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextNews}
+                    disabled={newsLoading || newsArticles.length <= 1}
+                    className="w-8 h-8 rounded-full border flex items-center justify-center transition-colors disabled:opacity-40"
+                    style={{ borderColor: C.border, backgroundColor: "#fff" }}
+                    aria-label="Next news article"
+                  >
+                    <ChevronRight
+                      className="w-4 h-4"
+                      style={{ color: C.text }}
+                    />
+                  </button>
+                </div>
+              </div>
+
+              {newsLoading ? (
+                <Card className="p-4 h-[300px] flex-1">
+                  <div className="text-sm" style={{ color: C.subtext }}>
+                    Loading latest sustainability news...
+                  </div>
+                </Card>
+              ) : newsArticles.length > 0 && displayNews ? (
+                <div className="space-y-3 h-[300px] flex flex-col">
+                  <NewsCard
+                    title={displayNews.title}
+                    source={displayNews.source}
+                    publishedAt={displayNews.publishedAt}
+                    description={displayNews.description}
+                    url={displayNews.url}
+                    image={displayNews.image}
+                  />
+                  <div
+                    className="flex items-center justify-between text-[11px] px-1 mt-auto"
+                    style={{ color: C.muted }}
+                  >
+                    <span>
+                      {activeNewsIndex + 1} of {newsArticles.length}
+                    </span>
+                    <span className="truncate">
+                      Use the arrows to browse more news
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <Card className="p-4 h-[300px] flex-1">
+                  <div className="text-sm" style={{ color: C.subtext }}>
+                    No sustainability news is available right now.
+                  </div>
+                </Card>
+              )}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {aiInsights.map((ins, i) => (
-                <InsightCard key={i} insight={ins} />
-              ))}
+
+            <div>
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" style={{ color: C.primary }} />
+                  <p
+                    className="text-xs font-bold uppercase tracking-wider"
+                    style={{ color: C.subtext }}
+                  >
+                    AI Sustainability Insights
+                  </p>
+                </div>
+                <button
+                  onClick={handleGenerateInsights}
+                  disabled={
+                    insightsLoading || newsArticles.length === 0 || newsLoading
+                  }
+                  className="px-3 py-1.5 rounded text-xs font-semibold transition-colors disabled:opacity-50"
+                  style={{
+                    backgroundColor: C.primary,
+                    color: "#fff",
+                  }}
+                >
+                  {insightsLoading ? (
+                    <span className="flex items-center gap-1">
+                      <Loader className="w-3 h-3 animate-spin" />
+                      Generating...
+                    </span>
+                  ) : (
+                    "Generate AI Insights"
+                  )}
+                </button>
+              </div>
+
+              {insightsError && (
+                <div
+                  className="mb-3 p-2 rounded text-xs"
+                  style={{ color: C.red }}
+                >
+                  {insightsError}
+                </div>
+              )}
+
+              <div
+                className="rounded-xl border bg-white p-3 max-h-[300px] overflow-y-auto space-y-3"
+                style={{ borderColor: C.border }}
+              >
+                {displayInsights.map((ins, i) => (
+                  <InsightCard key={`${ins.title}-${i}`} insight={ins} />
+                ))}
+                {!displayInsights.length && (
+                  <div className="text-sm p-2" style={{ color: C.subtext }}>
+                    Generate insights to populate this panel.
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
