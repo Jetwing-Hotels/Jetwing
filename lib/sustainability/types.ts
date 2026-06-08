@@ -54,3 +54,46 @@ export type SustainabilityEnvironmentRow = {
   occupied_room_nights: number | null;
   occupancy_pct: number | null;
 };
+
+export type SustainabilityWasteMonthlySummaryRow = {
+  property_id: string;
+  property_code: string | null;
+  property_name: string;
+  report_year: number;
+  report_month: number;
+  total_waste_kg: number | null;
+  recycled_kg: number | null;
+  composted_kg: number | null;
+  biogas_kg: number | null;
+  reused_kg: number | null;
+  hazardous_recycled_kg: number | null;
+  landfill_kg: number | null;
+  other_disposed_kg: number | null;
+  diverted_kg: number | null;
+  diversion_rate_pct: number | null;
+  recycling_rate_pct: number | null;
+  landfill_rate_pct: number | null;
+  occupied_room_nights: number | null;
+  occupancy_pct: number | null;
+  waste_kg_per_occupied_room: number | null;
+};
+
+export type CommunityProgramRow = {
+  community_program_id: string;
+  property_id: string | null;
+  report_year: number;
+  report_month: number;
+  program_name: string;
+  program_type: string | null;
+  participants: number;
+  beneficiaries: number | null;
+  staff_volunteer_hours: number | null;
+  investment_lkr: number;
+  start_date: string | null;
+  end_date: string | null;
+  status: string | null;
+  description: string | null;
+  notes: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+};

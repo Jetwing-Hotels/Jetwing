@@ -394,16 +394,16 @@ export const aiInsights: Insight[] = [
     body: 'Seasonal forecasts indicate below-average rainfall for the next two quarters affecting Kaduruketha. Pre-emptive rainwater storage expansion is advised.',
     impact: 'Medium probability',
   },
-  {
-    type: 'recommendation', title: 'Increase district-level sourcing',
-    body: 'Local sourcing sits at 78% group-wide. Onboarding 12 additional Uva and Eastern Province suppliers would push toward the 90% 2027 target.',
-    impact: '+7 pts sourcing',
-  },
-  {
-    type: 'saving', title: 'Biodigester utilisation gap at Kandy Gallery',
-    body: 'Kandy Gallery biodigester runs at 74% capacity. Diverting organic waste from landfill there would lift biogas recovery and cut LPG purchases.',
-    impact: '~LKR 1.9M/yr',
-  },
+  // {
+  //   type: 'recommendation', title: 'Increase district-level sourcing',
+  //   body: 'Local sourcing sits at 78% group-wide. Onboarding 12 additional Uva and Eastern Province suppliers would push toward the 90% 2027 target.',
+  //   impact: '+7 pts sourcing',
+  // },
+  // {
+  //   type: 'saving', title: 'Biodigester utilisation gap at Kandy Gallery',
+  //   body: 'Kandy Gallery biodigester runs at 74% capacity. Diverting organic waste from landfill there would lift biogas recovery and cut LPG purchases.',
+  //   impact: '~LKR 1.9M/yr',
+  // },
 ];
 
 // ── Risk management ──────────────────────────────────────────────────────────

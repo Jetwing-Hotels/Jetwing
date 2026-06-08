@@ -1,15 +1,29 @@
 "use client";
-import { SectionLabel } from '../ui';
+import { SectionLabel } from "../ui";
 
 import React, { useState } from "react";
-import { sumBy, toNumber, latestByPeriod, monthLabel } from '@/lib/sustainability/api';
-import { FileText, Download, FileSpreadsheet, CalendarClock, MapPin, Bell, User, SlidersHorizontal, Users } from 'lucide-react';
+import {
+  sumBy,
+  toNumber,
+  latestByPeriod,
+  monthLabel,
+} from "@/lib/sustainability/api";
+import {
+  FileText,
+  Download,
+  FileSpreadsheet,
+  CalendarClock,
+  MapPin,
+  Bell,
+  User,
+  SlidersHorizontal,
+  Users,
+} from "lucide-react";
 import {
   C,
   communityByHotel,
   employmentSplit,
   communityInvestment,
-  communityPrograms,
   supplierRegions,
   sourcingTrend,
   supplierRatings,
@@ -22,6 +36,7 @@ import {
   type Goal,
   type ReportRow,
 } from "../data";
+import type { CommunityProgramRow } from "@/lib/sustainability/types";
 import {
   Card,
   ChartCard,
@@ -34,8 +49,102 @@ import {
   PageHeader,
 } from "../ui";
 
+function noDataMessage(title: string, subtitle: string) {
+  return (
+    <Card className="p-6">
+      <p className="text-sm font-semibold" style={{ color: C.text }}>
+        No sustainability data found for this selection.
+      </p>
+      <p className="text-xs mt-1" style={{ color: C.subtext }}>
+        {title} · {subtitle}
+      </p>
+    </Card>
+  );
+}
+
+type CommunityProgramCard = {
+  title: string;
+  description: string;
+  programType: string | null;
+  status: string | null;
+  participants: number;
+  beneficiaries: number;
+  volunteerHours: number;
+  investmentLkr: number;
+  monthsActive: number;
+};
+
+function groupCommunityPrograms(
+  rows: CommunityProgramRow[],
+): CommunityProgramCard[] {
+  const buckets = new Map<
+    string,
+    CommunityProgramCard & { lastPeriod: number }
+  >();
+
+  for (const row of rows) {
+    const key = row.program_name;
+    const period = row.report_year * 12 + row.report_month;
+    const existing = buckets.get(key);
+
+    if (!existing) {
+      buckets.set(key, {
+        title: row.program_name,
+        description:
+          row.description?.trim() || row.notes?.trim() || "Community programme",
+        programType: row.program_type,
+        status: row.status,
+        participants: row.participants ?? 0,
+        beneficiaries: row.beneficiaries ?? 0,
+        volunteerHours: Number(row.staff_volunteer_hours ?? 0),
+        investmentLkr: Number(row.investment_lkr ?? 0),
+        monthsActive: 1,
+        lastPeriod: period,
+      });
+      continue;
+    }
+
+    existing.participants += row.participants ?? 0;
+    existing.beneficiaries += row.beneficiaries ?? 0;
+    existing.volunteerHours += Number(row.staff_volunteer_hours ?? 0);
+    existing.investmentLkr += Number(row.investment_lkr ?? 0);
+    existing.monthsActive += 1;
+
+    if (period >= existing.lastPeriod) {
+      existing.status = row.status;
+      existing.programType = row.program_type ?? existing.programType;
+      existing.description =
+        row.description?.trim() || row.notes?.trim() || existing.description;
+      existing.lastPeriod = period;
+    }
+  }
+
+  return [...buckets.values()]
+    .map(({ lastPeriod, ...card }) => card)
+    .sort(
+      (a, b) =>
+        b.participants - a.participants || b.investmentLkr - a.investmentLkr,
+    );
+}
+
 // ── Community Impact ─────────────────────────────────────────────────────────
-export function CommunityImpact({ rows = [] }: { rows?: Record<string, unknown>[] }) {
+export function CommunityImpact({
+  rows = [],
+  programRows = [],
+  programsLoading = false,
+  startYear,
+  startMonth,
+  endYear,
+  endMonth,
+}: {
+  rows?: Record<string, unknown>[];
+  programRows?: CommunityProgramRow[];
+  programsLoading?: boolean;
+  startYear?: number;
+  startMonth?: number;
+  endYear?: number;
+  endMonth?: number;
+}) {
   if (rows.length === 0) {
     return (
       <div>
@@ -44,120 +153,127 @@ export function CommunityImpact({ rows = [] }: { rows?: Record<string, unknown>[
             title="Community Impact"
             subtitle="Engagement programmes, youth training, local employment and social investment"
           />
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <StatTile
-              label="Programmes Conducted"
-              value="14"
-              sub="YTD across group"
-              accent={C.accent}
-            />
-            <StatTile
-              label="Youth Trained"
-              value="240"
-              sub="JYDP & Second Careers"
-              accent={C.primary}
-            />
-            <StatTile
-              label="Community Investment"
-              value="LKR 38.2M"
-              sub="Total spend YTD"
-              accent={C.blue}
-            />
-            <StatTile
-              label="Local Employment"
-              value="62%"
-              sub="Within district"
-              accent={C.teal}
-            />
-          </div>
-        </section>
-
-        <section data-export-block="true">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <div className="lg:col-span-2">
-              <ChartCard
-                title="Community Investment Trend"
-                subtitle="Monthly (LKR millions)"
-              >
-                <AreaTrend
-                  data={communityInvestment}
-                  xKey="month"
-                  series={[
-                    { key: "amount", name: "Investment", color: C.blue },
-                  ]}
-                  height={280}
-                  unit="M"
-                />
-              </ChartCard>
-            </div>
-            <ChartCard title="Employment Breakdown" subtitle="By geography">
-              <Donut data={employmentSplit} unit="%" />
-            </ChartCard>
-          </div>
-        </section>
-
-        <section data-export-block="true">
-          <SectionLabel>Flagship Programmes & Impact</SectionLabel>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {communityPrograms.map((p) => (
-              <Card key={p.title} className="p-5 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Users className="w-4 h-4" style={{ color: C.primary }} />
-                    <p className="text-sm font-bold" style={{ color: C.text }}>
-                      {p.title}
-                    </p>
-                  </div>
-                  <p
-                    className="text-xs leading-relaxed mb-4"
-                    style={{ color: C.subtext }}
-                  >
-                    {p.desc}
-                  </p>
-                </div>
-                <div
-                  className="flex items-center justify-between pt-3 border-t"
-                  style={{ borderColor: C.border }}
-                >
-                  <span className="text-xs font-semibold" style={{ color: C.muted }}>
-                    Active Participants
-                  </span>
-                  <span className="text-sm font-bold" style={{ color: C.primary }}>
-                    {p.participants}
-                  </span>
-                </div>
-              </Card>
-            ))}
-          </div>
+          {noDataMessage(
+            "Community Impact",
+            "Add rows to sustainability_social_monthly_summary",
+          )}
         </section>
       </div>
     );
   }
 
-  const communityProgramsCount = sumBy(rows, (row) => row.community_program_count);
+  const communityProgramsCount = sumBy(
+    rows,
+    (row) => row.community_program_count,
+  );
   const participants = sumBy(rows, (row) => row.total_participants);
   const investment = sumBy(rows, (row) => row.community_investment_lkr);
 
-  const latest = latestByPeriod(rows);
-
-  const localEmploymentPct = latest?.same_district_employment_rate_pct || 0;
-
   const communityInvestmentMonthly = rows.map((row) => ({
-    month: monthLabel(toNumber(row.report_year), toNumber(row.report_month)),
+    month: `${monthLabel(toNumber(row.report_year), toNumber(row.report_month))} ${toNumber(row.report_year)}`,
     amount: toNumber(row.community_investment_lkr) / 1000000,
   }));
 
+  // Build months list from selected range if provided, otherwise infer from rows
+  function buildMonthsList() {
+    if (
+      Number.isInteger(startYear) &&
+      Number.isInteger(startMonth) &&
+      Number.isInteger(endYear) &&
+      Number.isInteger(endMonth)
+    ) {
+      const list: { year: number; month: number }[] = [];
+      let y = startYear as number;
+      let m = startMonth as number;
+      while (
+        y < (endYear as number) ||
+        (y === (endYear as number) && m <= (endMonth as number))
+      ) {
+        list.push({ year: y, month: m });
+        m += 1;
+        if (m > 12) {
+          m = 1;
+          y += 1;
+        }
+      }
+      return list;
+    }
+
+    const sorted = [...rows].sort((a, b) =>
+      toNumber(a.report_year) === toNumber(b.report_year)
+        ? toNumber(a.report_month) - toNumber(b.report_month)
+        : toNumber(a.report_year) - toNumber(b.report_year),
+    );
+    if (sorted.length === 0) return [];
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    const list: { year: number; month: number }[] = [];
+    let y = toNumber(first.report_year);
+    let m = toNumber(first.report_month);
+    while (
+      y < toNumber(last.report_year) ||
+      (y === toNumber(last.report_year) && m <= toNumber(last.report_month))
+    ) {
+      list.push({ year: y, month: m });
+      m += 1;
+      if (m > 12) {
+        m = 1;
+        y += 1;
+      }
+    }
+    return list;
+  }
+
+  const months = buildMonthsList();
+
+  const investmentSeries = months.map(({ year, month }) => {
+    const match = rows.find(
+      (r) =>
+        toNumber(r.report_year) === year && toNumber(r.report_month) === month,
+    );
+    return {
+      month: `${monthLabel(year, month)} ${year}`,
+      amount: match ? toNumber(match.community_investment_lkr) / 1000000 : 0,
+    };
+  });
+
   const localEmployees = sumBy(rows, (row) => row.same_district_employees);
-  const provinceEmployees = sumBy(rows, (row) => row.same_province_other_district_employees);
+  const provinceEmployees = sumBy(
+    rows,
+    (row) => row.same_province_other_district_employees,
+  );
   const outsideEmployees = sumBy(rows, (row) => row.outside_province_employees);
 
   const empTotal = localEmployees + provinceEmployees + outsideEmployees;
 
-  const employmentSplitDb = empTotal > 0 ? [
-    { name: 'Within District', value: (localEmployees / empTotal) * 100, color: C.teal },
-    { name: 'Within Province', value: (provinceEmployees / empTotal) * 100, color: C.accent },
-    { name: 'Outside Province', value: (outsideEmployees / empTotal) * 100, color: C.muted },
-  ] : employmentSplit;
+  // Weighted percent for selected period (fallback to latest-period percent if no employee counts available)
+  const localEmploymentPct =
+    empTotal > 0
+      ? (localEmployees / empTotal) * 100
+      : latestByPeriod(rows)?.same_district_employment_rate_pct || 0;
+
+  const employmentSplitDb =
+    empTotal > 0
+      ? [
+          {
+            name: "Within District",
+            value: (localEmployees / empTotal) * 100,
+            color: C.teal,
+          },
+          {
+            name: "Within Province",
+            value: (provinceEmployees / empTotal) * 100,
+            color: C.accent,
+          },
+          {
+            name: "Outside Province",
+            value: (outsideEmployees / empTotal) * 100,
+            color: C.muted,
+          },
+        ]
+      : employmentSplit;
+
+  const groupedPrograms = groupCommunityPrograms(programRows);
 
   return (
     <div>
@@ -170,7 +286,7 @@ export function CommunityImpact({ rows = [] }: { rows?: Record<string, unknown>[
           <StatTile
             label="Programmes Conducted"
             value={communityProgramsCount.toString()}
-            sub="YTD across group"
+            sub="Selected period total"
             accent={C.accent}
           />
           <StatTile
@@ -182,7 +298,7 @@ export function CommunityImpact({ rows = [] }: { rows?: Record<string, unknown>[
           <StatTile
             label="Community Investment"
             value={`LKR ${(investment / 1000000).toFixed(1)}M`}
-            sub="Total spend YTD"
+            sub="Total spend (selected period)"
             accent={C.blue}
           />
           <StatTile
@@ -202,11 +318,9 @@ export function CommunityImpact({ rows = [] }: { rows?: Record<string, unknown>[
               subtitle="Monthly (LKR millions)"
             >
               <AreaTrend
-                data={communityInvestmentMonthly}
+                data={investmentSeries}
                 xKey="month"
-                series={[
-                  { key: "amount", name: "Investment", color: C.blue },
-                ]}
+                series={[{ key: "amount", name: "Investment", color: C.blue }]}
                 height={280}
                 unit="M"
               />
@@ -219,9 +333,24 @@ export function CommunityImpact({ rows = [] }: { rows?: Record<string, unknown>[
       </section>
 
       <section data-export-block="true">
-          <SectionLabel>Flagship Programmes & Impact</SectionLabel>
+        <SectionLabel>Flagship Programmes & Impact</SectionLabel>
+        {programsLoading ? (
+          <Card className="p-6">
+            <p className="text-sm font-semibold" style={{ color: C.text }}>
+              Loading community programmes...
+            </p>
+            <p className="text-xs mt-1" style={{ color: C.subtext }}>
+              Fetching programmes for the selected property and date range.
+            </p>
+          </Card>
+        ) : groupedPrograms.length === 0 ? (
+          noDataMessage(
+            "Flagship Programmes & Impact",
+            "Add rows to sustainability_community_programs",
+          )
+        ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {communityPrograms.map((p) => (
+            {groupedPrograms.map((p) => (
               <Card key={p.title} className="p-5 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
@@ -230,29 +359,84 @@ export function CommunityImpact({ rows = [] }: { rows?: Record<string, unknown>[
                       {p.title}
                     </p>
                   </div>
-                  <p
-                    className="text-xs leading-relaxed mb-4"
-                    style={{ color: C.subtext }}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {p.programType ? (
+                      <span
+                        className="text-[11px] px-2 py-1 rounded-full"
+                        style={{
+                          backgroundColor: C.softGreen,
+                          color: C.primary,
+                        }}
+                      >
+                        {p.programType}
+                      </span>
+                    ) : null}
+                    {p.status ? (
+                      <span
+                        className="text-[11px] px-2 py-1 rounded-full"
+                        style={{ backgroundColor: C.bg, color: C.subtext }}
+                      >
+                        {p.status}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div
+                    className="rounded-lg px-3 py-2 mb-4"
+                    style={{ backgroundColor: C.bg }}
                   >
-                    {p.desc}
-                  </p>
+                    <p
+                      className="text-xs leading-relaxed"
+                      style={{ color: C.subtext }}
+                    >
+                      {p.description}
+                    </p>
+                  </div>
                 </div>
                 <div
                   className="flex items-center justify-between pt-3 border-t"
                   style={{ borderColor: C.border }}
                 >
-                  <span className="text-xs font-semibold" style={{ color: C.muted }}>
+                  <span
+                    className="text-xs font-semibold"
+                    style={{ color: C.muted }}
+                  >
                     Active Participants
                   </span>
-                  <span className="text-sm font-bold" style={{ color: C.primary }}>
+                  <span
+                    className="text-sm font-bold"
+                    style={{ color: C.primary }}
+                  >
                     {p.participants}
                   </span>
+                </div>
+                <div
+                  className="grid grid-cols-2 gap-3 mt-4 text-[11px]"
+                  style={{ color: C.subtext }}
+                >
+                  <div
+                    className="rounded-md px-3 py-2"
+                    style={{ backgroundColor: C.bg }}
+                  >
+                    <p className="font-semibold" style={{ color: C.text }}>
+                      {Number(p.volunteerHours).toFixed(0)}
+                    </p>
+                    <p>Volunteer hrs</p>
+                  </div>
+                  <div
+                    className="rounded-md px-3 py-2"
+                    style={{ backgroundColor: C.bg }}
+                  >
+                    <p className="font-semibold" style={{ color: C.text }}>
+                      LKR {(p.investmentLkr / 1000000).toFixed(1)}M
+                    </p>
+                    <p>Investment</p>
+                  </div>
                 </div>
               </Card>
             ))}
           </div>
-        </section>
-
+        )}
+      </section>
     </div>
   );
 }
@@ -353,7 +537,11 @@ function RiskHeatmap() {
   );
 }
 
-export function RiskManagement({ rows = [] }: { rows?: Record<string, unknown>[] }) {
+export function RiskManagement({
+  rows = [],
+}: {
+  rows?: Record<string, unknown>[];
+}) {
   if (rows.length === 0) {
     return (
       <div>
@@ -362,103 +550,18 @@ export function RiskManagement({ rows = [] }: { rows?: Record<string, unknown>[]
             title="Risk Management"
             subtitle="Sustainability risk register and mitigation tracking"
           />
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <StatTile
-              label="Total Risks"
-              value="8"
-              sub="Tracked group-wide"
-              accent={C.primary}
-            />
-            <StatTile
-              label="High Risk Items"
-              value="2"
-              sub="Requires attention"
-              accent={C.red}
-            />
-            <StatTile
-              label="Avg Mitigation"
-              value="68%"
-              sub="Progress across risks"
-              accent={C.green}
-            />
-            <StatTile
-              label="Emerging Risks"
-              value="3"
-              sub="Trending upward"
-              accent={C.amber}
-            />
-          </div>
-        </section>
-
-        <section data-export-block="true">
-          <div className="grid grid-cols-1 gap-6">
-            <Card className="overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead>
-                    <tr style={{ backgroundColor: C.bg, borderBottom: `1px solid ${C.border}` }}>
-                      {["ID", "Risk Title", "Category", "Score", "Mitigation"].map((h) => (
-                        <th
-                          key={h}
-                          className="py-3 px-3 text-[11px] font-semibold uppercase tracking-wider"
-                          style={{ color: C.subtext }}
-                        >
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y" style={{ borderColor: C.border }}>
-                    {risks.map((r: Risk) => {
-                      const score = r.probability * r.severity;
-                      const riskColor = (s: number) =>
-                        s >= 20 ? C.red : s >= 12 ? C.amber : s >= 8 ? C.primary : C.green;
-                      return (
-                        <tr key={r.id}>
-                          <td
-                            className="py-2.5 px-3 font-medium"
-                            style={{ color: C.muted }}
-                          >
-                            {r.id}
-                          </td>
-                          <td className="py-2.5 px-3" style={{ color: C.text }}>
-                            {r.title}
-                          </td>
-                          <td
-                            className="py-2.5 px-3"
-                            style={{ color: C.subtext }}
-                          >
-                            {r.category}
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <span
-                              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-xs font-bold text-white"
-                              style={{ backgroundColor: riskColor(score) }}
-                            >
-                              {score}
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-3 w-28">
-                            <ProgressBar
-                              value={r.mitigation}
-                              color={C.primary}
-                            />
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
-          </div>
+          {noDataMessage(
+            "Risk Management",
+            "Add rows to sustainability_risk_register_view",
+          )}
         </section>
       </div>
     );
   }
 
-  const highRiskCount = rows.filter((row) => row.risk_level === 'High').length;
-  const averageRiskScore = rows.length === 0 ? 0 : sumBy(rows, (row) => row.risk_score) / rows.length;
+  const highRiskCount = rows.filter((row) => row.risk_level === "High").length;
+  const averageRiskScore =
+    rows.length === 0 ? 0 : sumBy(rows, (row) => row.risk_score) / rows.length;
   const riskColor = (s: number) =>
     s >= 20 ? C.red : s >= 12 ? C.amber : s >= 8 ? C.primary : C.green;
 
@@ -490,67 +593,16 @@ export function RiskManagement({ rows = [] }: { rows?: Record<string, unknown>[]
           />
         </div>
       </section>
-
-      <section data-export-block="true">
-        <div className="grid grid-cols-1 gap-6">
-          <Card className="overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead>
-                  <tr style={{ backgroundColor: C.bg, borderBottom: `1px solid ${C.border}` }}>
-                    {["Risk Title", "Category", "Score", "Level", "Status"].map((h) => (
-                      <th
-                        key={h}
-                        className="py-3 px-3 text-[11px] font-semibold uppercase tracking-wider"
-                        style={{ color: C.subtext }}
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y" style={{ borderColor: C.border }}>
-                  {rows.map((r, index) => {
-                    return (
-                      <tr key={index}>
-                        <td className="py-2.5 px-3" style={{ color: C.text }}>
-                          {r.risk_title as string}
-                        </td>
-                        <td
-                          className="py-2.5 px-3"
-                          style={{ color: C.subtext }}
-                        >
-                          {r.risk_category as string}
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <span
-                            className="inline-flex items-center justify-center w-8 h-7 rounded-md text-xs font-bold text-white"
-                            style={{ backgroundColor: riskColor(toNumber(r.risk_score) / 4) }}
-                          >
-                            {toNumber(r.risk_score)}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <SeverityPill level={r.risk_level === 'High' ? 'At Risk' : r.risk_level === 'Medium' ? 'Behind' : 'On Track'} />
-                        </td>
-                        <td className="py-2.5 px-3" style={{ color: C.subtext }}>
-                           {r.status as string}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        </div>
-      </section>
     </div>
   );
 }
 
 // ── Sustainability Goals ─────────────────────────────────────────────────────
-export function SustainabilityGoals({ rows = [] }: { rows?: Record<string, unknown>[] }) {
+export function SustainabilityGoals({
+  rows = [],
+}: {
+  rows?: Record<string, unknown>[];
+}) {
   if (rows.length === 0) {
     return (
       <div>
@@ -559,97 +611,23 @@ export function SustainabilityGoals({ rows = [] }: { rows?: Record<string, unkno
             title="Sustainability Goals"
             subtitle="Strategic targets and progress tracking toward 2027–2030 commitments"
           />
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <StatTile
-              label="Active Goals"
-              value="6"
-              sub="Group-wide targets"
-              accent={C.primary}
-            />
-            <StatTile
-              label="On Track"
-              value="4"
-              sub="Meeting trajectory"
-              accent={C.green}
-            />
-            <StatTile
-              label="At Risk"
-              value="1"
-              sub="Needs attention"
-              accent={C.amber}
-            />
-            <StatTile
-              label="Behind"
-              value="1"
-              sub="Acceleration required"
-              accent={C.red}
-            />
-          </div>
-        </section>
-
-        <section data-export-block="true">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {goals.map((g: Goal) => {
-              const pct = Math.round((g.current / g.target) * 100);
-              return (
-                <Card key={g.label} className="p-5">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <p className="text-sm font-bold" style={{ color: C.text }}>
-                        {g.label}
-                      </p>
-                      <p className="text-xs mt-0.5" style={{ color: C.muted }}>
-                        Target by {g.deadline}
-                      </p>
-                    </div>
-                    <SeverityPill level={g.status} />
-                  </div>
-                  <div className="flex items-end gap-2 mb-3">
-                    <p
-                      className="text-3xl font-bold leading-none"
-                      style={{ color: g.color }}
-                    >
-                      {g.current}
-                      {g.unit}
-                    </p>
-                    <p className="text-sm mb-0.5" style={{ color: C.muted }}>
-                      / {g.target}
-                      {g.unit} target
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[11px]" style={{ color: C.subtext }}>
-                      Progress to target
-                    </span>
-                    <span
-                      className="text-[11px] font-bold"
-                      style={{ color: g.color }}
-                    >
-                      {pct}%
-                    </span>
-                  </div>
-                  <ProgressBar
-                    value={pct}
-                    color={
-                      g.status === "Behind"
-                        ? C.red
-                        : g.status === "At Risk"
-                          ? C.amber
-                          : g.color
-                    }
-                  />
-                </Card>
-              );
-            })}
-          </div>
+          {noDataMessage(
+            "Sustainability Goals",
+            "Add rows to sustainability_goal_progress",
+          )}
         </section>
       </div>
     );
   }
 
-  const achieved = rows.filter((row) => row.computed_status === 'achieved').length;
-  const atRisk = rows.filter((row) => row.computed_status === 'at_risk').length;
-  const avgProgress = rows.length === 0 ? 0 : sumBy(rows, (row) => row.progress_pct) / rows.length;
+  const achieved = rows.filter(
+    (row) => row.computed_status === "achieved",
+  ).length;
+  const atRisk = rows.filter((row) => row.computed_status === "at_risk").length;
+  const avgProgress =
+    rows.length === 0
+      ? 0
+      : sumBy(rows, (row) => row.progress_pct) / rows.length;
 
   return (
     <div>
@@ -690,8 +668,18 @@ export function SustainabilityGoals({ rows = [] }: { rows?: Record<string, unkno
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {rows.map((g) => {
             const pct = Math.round(toNumber(g.progress_pct));
-            const statusLevel = g.computed_status === 'at_risk' ? 'At Risk' : g.computed_status === 'achieved' ? 'On Track' : 'On Track';
-            const color = g.computed_status === 'at_risk' ? C.amber : g.computed_status === 'achieved' ? C.green : C.primary;
+            const statusLevel =
+              g.computed_status === "at_risk"
+                ? "At Risk"
+                : g.computed_status === "achieved"
+                  ? "On Track"
+                  : "On Track";
+            const color =
+              g.computed_status === "at_risk"
+                ? C.amber
+                : g.computed_status === "achieved"
+                  ? C.green
+                  : C.primary;
             return (
               <Card key={g.goal_name as string} className="p-5">
                 <div className="flex items-start justify-between mb-4">
@@ -727,10 +715,7 @@ export function SustainabilityGoals({ rows = [] }: { rows?: Record<string, unkno
                     {pct}%
                   </span>
                 </div>
-                <ProgressBar
-                  value={pct}
-                  color={color}
-                />
+                <ProgressBar value={pct} color={color} />
               </Card>
             );
           })}
@@ -894,7 +879,13 @@ export function Settings() {
   );
 }
 
-export function EsgReports({ esgRows = [], governanceRows = [] }: { esgRows?: Record<string, unknown>[], governanceRows?: Record<string, unknown>[] }) {
+export function EsgReports({
+  esgRows = [],
+  governanceRows = [],
+}: {
+  esgRows?: Record<string, unknown>[];
+  governanceRows?: Record<string, unknown>[];
+}) {
   if (governanceRows.length === 0) {
     return (
       <div>
@@ -933,7 +924,10 @@ export function EsgReports({ esgRows = [], governanceRows = [] }: { esgRows?: Re
 
         <section data-export-block="true">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <ChartCard title="Pillar Breakdown" subtitle="E, S and G sub-scores">
+            <ChartCard
+              title="Pillar Breakdown"
+              subtitle="E, S and G sub-scores"
+            >
               <HBar
                 data={esgPillars}
                 dataKey="score"
@@ -979,28 +973,41 @@ export function EsgReports({ esgRows = [], governanceRows = [] }: { esgRows?: Re
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead>
-                  <tr style={{ backgroundColor: C.bg, borderBottom: `1px solid ${C.border}` }}>
-                    {["Report Name", "Type", "Period", "Updated", "Status"].map((h) => (
-                      <th
-                        key={h}
-                        className="py-3 px-4 text-[11px] font-semibold uppercase tracking-wider"
-                        style={{ color: C.subtext }}
-                      >
-                        {h}
-                      </th>
-                    ))}
+                  <tr
+                    style={{
+                      backgroundColor: C.bg,
+                      borderBottom: `1px solid ${C.border}`,
+                    }}
+                  >
+                    {["Report Name", "Type", "Period", "Updated", "Status"].map(
+                      (h) => (
+                        <th
+                          key={h}
+                          className="py-3 px-4 text-[11px] font-semibold uppercase tracking-wider"
+                          style={{ color: C.subtext }}
+                        >
+                          {h}
+                        </th>
+                      ),
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y" style={{ borderColor: C.border }}>
                   {reports.map((r: ReportRow) => (
                     <tr key={r.name}>
-                      <td className="py-3 px-4 font-semibold" style={{ color: C.text }}>
+                      <td
+                        className="py-3 px-4 font-semibold"
+                        style={{ color: C.text }}
+                      >
                         {r.name}
                       </td>
                       <td className="py-3 px-4" style={{ color: C.subtext }}>
                         {r.type}
                       </td>
-                      <td className="py-3 px-4 font-medium" style={{ color: C.text }}>
+                      <td
+                        className="py-3 px-4 font-medium"
+                        style={{ color: C.text }}
+                      >
                         {r.period}
                       </td>
                       <td className="py-3 px-4" style={{ color: C.subtext }}>
@@ -1028,21 +1035,40 @@ export function EsgReports({ esgRows = [], governanceRows = [] }: { esgRows?: Re
     );
   }
 
-  const latestGov = [...governanceRows].sort((a, b) => toNumber(b.report_year) - toNumber(a.report_year))[0];
+  const latestGov = [...governanceRows].sort(
+    (a, b) => toNumber(b.report_year) - toNumber(a.report_year),
+  )[0];
   const policyScore = latestGov?.policy_disclosure_score || 0;
   const govScore = latestGov?.governance_score || 0;
 
-  const latestEsg = esgRows.length > 0 ? [...esgRows].sort((a, b) => {
-     const yearDiff = toNumber(b.report_year) - toNumber(a.report_year);
-     if (yearDiff !== 0) return yearDiff;
-     return toNumber(b.report_month) - toNumber(a.report_month);
-  })[0] : null;
+  const latestEsg =
+    esgRows.length > 0
+      ? [...esgRows].sort((a, b) => {
+          const yearDiff = toNumber(b.report_year) - toNumber(a.report_year);
+          if (yearDiff !== 0) return yearDiff;
+          return toNumber(b.report_month) - toNumber(a.report_month);
+        })[0]
+      : null;
 
-  const dbEsgPillars = latestEsg ? [
-    { name: 'Environmental', score: toNumber(latestEsg.environmental_score), color: C.primary },
-    { name: 'Social', score: toNumber(latestEsg.social_score), color: C.blue },
-    { name: 'Governance', score: toNumber(latestEsg.governance_score), color: C.accent },
-  ] : esgPillars;
+  const dbEsgPillars = latestEsg
+    ? [
+        {
+          name: "Environmental",
+          score: toNumber(latestEsg.environmental_score),
+          color: C.primary,
+        },
+        {
+          name: "Social",
+          score: toNumber(latestEsg.social_score),
+          color: C.blue,
+        },
+        {
+          name: "Governance",
+          score: toNumber(latestEsg.governance_score),
+          color: C.accent,
+        },
+      ]
+    : esgPillars;
 
   const overallEsg = latestEsg ? toNumber(latestEsg.overall_score) : 87;
 
@@ -1129,28 +1155,41 @@ export function EsgReports({ esgRows = [], governanceRows = [] }: { esgRows?: Re
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead>
-                <tr style={{ backgroundColor: C.bg, borderBottom: `1px solid ${C.border}` }}>
-                  {["Report Name", "Type", "Period", "Updated", "Status"].map((h) => (
-                    <th
-                      key={h}
-                      className="py-3 px-4 text-[11px] font-semibold uppercase tracking-wider"
-                      style={{ color: C.subtext }}
-                    >
-                      {h}
-                    </th>
-                  ))}
+                <tr
+                  style={{
+                    backgroundColor: C.bg,
+                    borderBottom: `1px solid ${C.border}`,
+                  }}
+                >
+                  {["Report Name", "Type", "Period", "Updated", "Status"].map(
+                    (h) => (
+                      <th
+                        key={h}
+                        className="py-3 px-4 text-[11px] font-semibold uppercase tracking-wider"
+                        style={{ color: C.subtext }}
+                      >
+                        {h}
+                      </th>
+                    ),
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y" style={{ borderColor: C.border }}>
                 {reports.map((r: ReportRow) => (
                   <tr key={r.name}>
-                    <td className="py-3 px-4 font-semibold" style={{ color: C.text }}>
+                    <td
+                      className="py-3 px-4 font-semibold"
+                      style={{ color: C.text }}
+                    >
                       {r.name}
                     </td>
                     <td className="py-3 px-4" style={{ color: C.subtext }}>
                       {r.type}
                     </td>
-                    <td className="py-3 px-4 font-medium" style={{ color: C.text }}>
+                    <td
+                      className="py-3 px-4 font-medium"
+                      style={{ color: C.text }}
+                    >
                       {r.period}
                     </td>
                     <td className="py-3 px-4" style={{ color: C.subtext }}>
@@ -1174,7 +1213,6 @@ export function EsgReports({ esgRows = [], governanceRows = [] }: { esgRows?: Re
           </div>
         </Card>
       </section>
-
     </div>
   );
 }

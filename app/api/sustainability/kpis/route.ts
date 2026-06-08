@@ -57,6 +57,53 @@ function fixed(value: number, decimals = 1): string {
   }).format(value);
 }
 
+function toMonthIndex(year: number, month: number): number {
+  return year * 12 + (month - 1);
+}
+
+function fromMonthIndex(index: number): { year: number; month: number } {
+  const year = Math.floor(index / 12);
+  const month = (index % 12) + 1;
+  return { year, month };
+}
+
+function shiftRangeBackByLength(
+  startYear: number,
+  startMonth: number,
+  endYear: number,
+  endMonth: number
+) {
+  const startIndex = toMonthIndex(startYear, startMonth);
+  const endIndex = toMonthIndex(endYear, endMonth);
+  const length = endIndex - startIndex + 1;
+
+  if (length <= 0) {
+    return null;
+  }
+
+  const previousEndIndex = startIndex - 1;
+  const previousStartIndex = previousEndIndex - (length - 1);
+  const twoPeriodsAgoEndIndex = previousStartIndex - 1;
+  const twoPeriodsAgoStartIndex = twoPeriodsAgoEndIndex - (length - 1);
+
+  return {
+    current: {
+      startYear,
+      startMonth,
+      endYear,
+      endMonth,
+    },
+    previous: {
+      ...fromMonthIndex(previousStartIndex),
+      end: fromMonthIndex(previousEndIndex),
+    },
+    twoPeriodsAgo: {
+      ...fromMonthIndex(twoPeriodsAgoStartIndex),
+      end: fromMonthIndex(twoPeriodsAgoEndIndex),
+    },
+  };
+}
+
 function delta(
   current: number,
   previous: number,
@@ -168,7 +215,16 @@ function targetText(
   const target = targets.get(metricCode);
   if (!target) return undefined;
 
-  return `Target: ${toNumber(target.target_value).toLocaleString()} ${unit}`;
+  return `${toNumber(target.target_value).toLocaleString()} ${unit}`;
+}
+
+function periodLabel(
+  startYear: number,
+  startMonth: number,
+  endYear: number,
+  endMonth: number
+) {
+  return `${startYear}-${String(startMonth).padStart(2, "0")} to ${endYear}-${String(endMonth).padStart(2, "0")}`;
 }
 
 async function fetchSummary(
@@ -227,7 +283,6 @@ function buildKpis({
       value: fixed(currentCarbon, 1),
       rawUnit: "tCO₂e",
       ...delta(currentCarbon, previousCarbon, true),
-      prev: `${fixed(previousCarbon, 1)} tCO₂e prior year`,
       progress: getProgress(
         targets,
         "carbon_intensity",
@@ -238,6 +293,7 @@ function buildKpis({
         "carbon_intensity",
         "kgCO₂e per occupied room"
       ),
+      prev: `${fixed(previousCarbon, 1)} tCO₂e previous period`,
       spark: [],
     },
     {
@@ -246,7 +302,7 @@ function buildKpis({
       value: fixed(carbonReductionPct, 1),
       rawUnit: "%",
       ...deltaPoints(carbonReductionPct, previousCarbonReductionPct, true),
-      prev: `${fixed(previousCarbonReductionPct, 1)}% prior year`,
+      prev: `${fixed(previousCarbonReductionPct, 1)}% previous period`,
       progress: getProgress(
         targets,
         "carbon_reduction_pct",
@@ -265,7 +321,7 @@ function buildKpis({
         toNumber(previous.total_energy_kwh),
         true
       ),
-      prev: `${compact(toNumber(previous.total_energy_kwh), 1)} kWh prior year`,
+      prev: `${compact(toNumber(previous.total_energy_kwh), 1)} kWh previous period`,
       progress: getProgress(
         targets,
         "energy_intensity",
@@ -288,7 +344,7 @@ function buildKpis({
         toNumber(previous.solar_pv_kwh),
         false
       ),
-      prev: `${compact(toNumber(previous.solar_pv_kwh), 1)} kWh prior year`,
+      prev: `${compact(toNumber(previous.solar_pv_kwh), 1)} kWh previous period`,
       progress: getProgress(
         targets,
         "renewable_share",
@@ -307,7 +363,7 @@ function buildKpis({
         toNumber(previous.total_water_l),
         true
       ),
-      prev: `${compact(toNumber(previous.total_water_l), 1)} L prior year`,
+      prev: `${compact(toNumber(previous.total_water_l), 1)} L previous period`,
       progress: getProgress(
         targets,
         "water_intensity",
@@ -330,7 +386,7 @@ function buildKpis({
         toNumber(previous.waste_diversion_rate_pct),
         true
       ),
-      prev: `${fixed(toNumber(previous.waste_diversion_rate_pct), 1)}% prior year`,
+      prev: `${fixed(toNumber(previous.waste_diversion_rate_pct), 1)}% previous period`,
       progress: getProgress(
         targets,
         "waste_diversion_rate",
@@ -349,7 +405,7 @@ function buildKpis({
         toNumber(previous.local_sourcing_rate_pct),
         true
       ),
-      prev: `${fixed(toNumber(previous.local_sourcing_rate_pct), 1)}% prior year`,
+      prev: `${fixed(toNumber(previous.local_sourcing_rate_pct), 1)}% previous period`,
       progress: getProgress(
         targets,
         "local_sourcing_rate",
@@ -368,7 +424,7 @@ function buildKpis({
         toNumber(previous.community_program_count),
         false
       ),
-      prev: `${integer(toNumber(previous.community_program_count))} prior year`,
+      prev: `${integer(toNumber(previous.community_program_count))} previous period`,
       progress: getProgress(
         targets,
         "community_programs",
@@ -387,7 +443,7 @@ function buildKpis({
         toNumber(previous.overall_score),
         true
       ),
-      prev: `${fixed(toNumber(previous.overall_score), 0)} prior year`,
+      prev: `${fixed(toNumber(previous.overall_score), 0)} previous period`,
       progress: getProgress(
         targets,
         "overall_sustainability_score",
@@ -406,7 +462,7 @@ function buildKpis({
         toNumber(previous.governance_score),
         true
       ),
-      prev: `${fixed(toNumber(previous.governance_score), 0)} prior year`,
+      prev: `${fixed(toNumber(previous.governance_score), 0)} previous period`,
       progress: getProgress(
         targets,
         "governance_score",
@@ -446,34 +502,50 @@ export async function GET(request: Request) {
   try {
     const supabase = await createAdminClient();
 
-    const current = await fetchSummary(
-      supabase,
+    const ranges = shiftRangeBackByLength(
       startYear,
       startMonth,
       endYear,
-      endMonth,
+      endMonth
+    );
+
+    if (!ranges) {
+      return NextResponse.json(
+        { error: "The selected date range is invalid." },
+        { status: 400 }
+      );
+    }
+
+    const current = await fetchSummary(
+      supabase,
+      ranges.current.startYear,
+      ranges.current.startMonth,
+      ranges.current.endYear,
+      ranges.current.endMonth,
       propertyId
     );
 
     const previous = await fetchSummary(
       supabase,
-      startYear - 1,
-      startMonth,
-      endYear - 1,
-      endMonth,
+      ranges.previous.year,
+      ranges.previous.month,
+      ranges.previous.end.year,
+      ranges.previous.end.month,
       propertyId
     );
 
     const twoYearsAgo = await fetchSummary(
       supabase,
-      startYear - 2,
-      startMonth,
-      endYear - 2,
-      endMonth,
+      ranges.twoPeriodsAgo.year,
+      ranges.twoPeriodsAgo.month,
+      ranges.twoPeriodsAgo.end.year,
+      ranges.twoPeriodsAgo.end.month,
       propertyId
     );
 
-    const endDate = `${endYear}-${String(endMonth).padStart(2, "0")}-01`;
+    const endDate = `${ranges.current.endYear}-${String(
+      ranges.current.endMonth
+    ).padStart(2, "0")}-01`;
 
     const { data: targetRows, error: targetError } = await (supabase as any)
       .from("sustainability_metric_targets")
@@ -512,10 +584,24 @@ export async function GET(request: Request) {
     return NextResponse.json({
       filters: {
         propertyId: propertyId ?? "all",
-        startYear,
-        startMonth,
-        endYear,
-        endMonth,
+        startYear: ranges.current.startYear,
+        startMonth: ranges.current.startMonth,
+        endYear: ranges.current.endYear,
+        endMonth: ranges.current.endMonth,
+        previousPeriod: {
+          start: periodLabel(
+            ranges.previous.year,
+            ranges.previous.month,
+            ranges.previous.end.year,
+            ranges.previous.end.month
+          ),
+          previous2: periodLabel(
+            ranges.twoPeriodsAgo.year,
+            ranges.twoPeriodsAgo.month,
+            ranges.twoPeriodsAgo.end.year,
+            ranges.twoPeriodsAgo.end.month
+          ),
+        },
       },
       summary: current,
       kpis,

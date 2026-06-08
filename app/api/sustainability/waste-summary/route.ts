@@ -15,8 +15,6 @@ export async function GET(request: NextRequest) {
     const startMonth = searchParams.get('startMonth');
     const endYear = searchParams.get('endYear');
     const endMonth = searchParams.get('endMonth');
-    const year = searchParams.get('year');
-    const month = searchParams.get('month');
 
     const hasDateRange =
       startYear !== null &&
@@ -30,7 +28,7 @@ export async function GET(request: NextRequest) {
     const parsedEndMonth = hasDateRange ? Number(endMonth) : null;
 
     let query = supabaseAdmin
-      .from('sustainability_environment_dashboard_monthly')
+      .from('sustainability_waste_monthly_summary')
       .select('*')
       .order('report_year', { ascending: true })
       .order('report_month', { ascending: true })
@@ -51,20 +49,27 @@ export async function GET(request: NextRequest) {
           { status: 400 },
         );
       }
-    }
 
-    if (year) {
-      const parsedYear = Number(year);
-      if (!Number.isNaN(parsedYear)) {
-        query = query.eq('report_year', parsedYear);
-      }
-    }
+      const startIndex = Number(parsedStartYear) * 12 + (Number(parsedStartMonth) - 1);
+      const endIndex = Number(parsedEndYear) * 12 + (Number(parsedEndMonth) - 1);
 
-    if (month) {
-      const parsedMonth = Number(month);
-      if (!Number.isNaN(parsedMonth)) {
-        query = query.eq('report_month', parsedMonth);
+      query = query.or(
+        `and(report_year.gte.${parsedStartYear},report_month.gte.${parsedStartMonth}),and(report_year.gt.${parsedStartYear},report_year.lt.${parsedEndYear}),and(report_year.lte.${parsedEndYear},report_month.lte.${parsedEndMonth})`,
+      );
+
+      // Supabase filters above are coarse; tighten in memory to ensure the exact month range.
+      const { data, error } = await query;
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
       }
+
+      const filtered = (data ?? []).filter((row) => {
+        const rowIndex = Number(row.report_year) * 12 + (Number(row.report_month) - 1);
+        return rowIndex >= startIndex && rowIndex <= endIndex;
+      });
+
+      return NextResponse.json({ data: filtered });
     }
 
     const { data, error } = await query;
@@ -73,21 +78,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const filtered = hasDateRange
-      ? (data ?? []).filter((row) => {
-          const rowIndex = Number(row.report_year) * 12 + Number(row.report_month);
-          const startIndex = Number(parsedStartYear) * 12 + (Number(parsedStartMonth) - 1);
-          const endIndex = Number(parsedEndYear) * 12 + (Number(parsedEndMonth) - 1);
-
-          const priorMonthsParam = searchParams.get('priorMonths');
-          const parsedPriorMonths = priorMonthsParam ? Number(priorMonthsParam) : 0;
-          const startIndexAdjusted = startIndex - (Number.isFinite(parsedPriorMonths) ? parsedPriorMonths : 0);
-
-          return rowIndex >= startIndexAdjusted && rowIndex <= endIndex;
-        })
-      : data ?? [];
-
-    return NextResponse.json({ data: filtered });
+    return NextResponse.json({ data: data ?? [] });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ error: message }, { status: 500 });

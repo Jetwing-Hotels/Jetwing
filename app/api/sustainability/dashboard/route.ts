@@ -29,17 +29,18 @@ export async function GET(request: Request) {
 
     results.environment = environment ?? [];
 
-    const biodiversityQuery = (await createAdminClient())
-        .from('sustainability_biodiversity_annual_summary')
-        .select('*')
-        .order('report_year', { ascending: true })
-        .order('property_name', { ascending: true });
-
-    if (propertyId && propertyId !== 'all') {
-        biodiversityQuery.eq('property_id', propertyId);
-    }
-    const { data: biodiversity } = await biodiversityQuery;
-    results.biodiversity = biodiversity ?? [];
+    // Disabled in emergency mode
+    // const biodiversityQuery = (await createAdminClient())
+    //     .from('sustainability_biodiversity_annual_summary')
+    //     .select('*')
+    //     .order('report_year', { ascending: true })
+    //     .order('property_name', { ascending: true });
+    //
+    // if (propertyId && propertyId !== 'all') {
+    //     biodiversityQuery.eq('property_id', propertyId);
+    // }
+    // const { data: biodiversity } = await biodiversityQuery;
+    // results.biodiversity = biodiversity ?? [];
 
 
     const socialQuery = (await createAdminClient())
@@ -56,29 +57,31 @@ export async function GET(request: Request) {
     results.social = social ?? [];
 
 
-    const riskQuery = (await createAdminClient())
-        .from('sustainability_risk_register_view')
-        .select('*')
-        .order('report_year', { ascending: false })
-        .order('risk_score', { ascending: false });
+    // Disabled in emergency mode
+    // const riskQuery = (await createAdminClient())
+    //     .from('sustainability_risk_register_view')
+    //     .select('*')
+    //     .order('report_year', { ascending: false })
+    //     .order('risk_score', { ascending: false });
+    //
+    // if (propertyId && propertyId !== 'all') {
+    //     riskQuery.eq('property_id', propertyId);
+    // }
+    // const { data: risks } = await riskQuery;
+    // results.risks = risks ?? [];
 
-    if (propertyId && propertyId !== 'all') {
-        riskQuery.eq('property_id', propertyId);
-    }
-    const { data: risks } = await riskQuery;
-    results.risks = risks ?? [];
 
-
-    const goalsQuery = (await createAdminClient())
-        .from('sustainability_goal_progress')
-        .select('*')
-        .order('due_date', { ascending: true });
-
-    if (propertyId && propertyId !== 'all') {
-        goalsQuery.eq('property_id', propertyId);
-    }
-    const { data: goals } = await goalsQuery;
-    results.goals = goals ?? [];
+    // Disabled in emergency mode
+    // const goalsQuery = (await createAdminClient())
+    //     .from('sustainability_goal_progress')
+    //     .select('*')
+    //     .order('due_date', { ascending: true });
+    //
+    // if (propertyId && propertyId !== 'all') {
+    //     goalsQuery.eq('property_id', propertyId);
+    // }
+    // const { data: goals } = await goalsQuery;
+    // results.goals = goals ?? [];
 
 
     const governanceQuery = (await createAdminClient())
@@ -94,17 +97,18 @@ export async function GET(request: Request) {
     results.governance = governance ?? [];
 
 
-    const esgQuery = (await createAdminClient())
-        .from('sustainability_esg_score_snapshots')
-        .select('*')
-        .order('report_year', { ascending: true })
-        .order('report_month', { ascending: true });
-
-    if (propertyId && propertyId !== 'all') {
-        esgQuery.eq('property_id', propertyId);
-    }
-    const { data: esg } = await esgQuery;
-    results.esg = esg ?? [];
+    // Disabled in emergency mode
+    // const esgQuery = (await createAdminClient())
+    //     .from('sustainability_esg_score_snapshots')
+    //     .select('*')
+    //     .order('report_year', { ascending: true })
+    //     .order('report_month', { ascending: true });
+    //
+    // if (propertyId && propertyId !== 'all') {
+    //     esgQuery.eq('property_id', propertyId);
+    // }
+    // const { data: esg } = await esgQuery;
+    // results.esg = esg ?? [];
 
     return NextResponse.json(results);
   } catch (err: unknown) {
