@@ -53,6 +53,7 @@ export const POST = route<Ctx>(async (req, { params }) => {
 
   let sent = 0;
   let failed = 0;
+  let lastError = '';
 
   for (const r of recipients) {
     // PostgREST embeds a to-one relation as an object (or array depending on FK inference).
@@ -74,9 +75,14 @@ export const POST = route<Ctx>(async (req, { params }) => {
           }),
         });
         okSend = resp.ok;
+        if (!okSend) {
+          const errBody = await resp.json().catch(() => ({}));
+          lastError = errBody.errors?.[0]?.message || resp.statusText || 'SendGrid error';
+        }
         messageId = resp.headers.get('x-message-id') ?? messageId;
-      } catch {
+      } catch (e) {
         okSend = false;
+        lastError = e instanceof Error ? e.message : 'Network error';
       }
     }
 
@@ -116,6 +122,10 @@ export const POST = route<Ctx>(async (req, { params }) => {
 
   return ok({
     data: { sent, failed, dry_run: !live },
-    message: live ? 'Emails dispatched via SendGrid.' : 'Dry run — recipients marked SENT, no external email sent.',
+    message: live
+      ? sent > 0
+        ? 'Emails dispatched via SendGrid.'
+        : `Failed to dispatch emails: ${lastError || 'Unknown error'}`
+      : 'Dry run — recipients marked SENT, no external email sent.',
   });
 });

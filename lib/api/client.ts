@@ -65,10 +65,10 @@ export const guestApi = {
   buildAudience: (id: string) =>
     api<{ data: { added: number; audience_size: number } }>(`/campaigns/${id}/build-audience`, { method: 'POST' }),
   getAudience: (id: string) => api<{ data: unknown[]; pagination: unknown }>(`/campaigns/${id}/audience`),
-  sendCampaign: (id: string, confirm = false) =>
+  sendCampaign: (id: string, body: { confirm?: boolean } = {}) =>
     api<{ data: { sent: number; failed: number; dry_run: boolean }; message: string }>(`/campaigns/${id}/send`, {
       method: 'POST',
-      body: JSON.stringify({ confirm }),
+      body: JSON.stringify(body),
     }),
   createCampaign: (body: {
     campaign_name: string;

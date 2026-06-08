@@ -149,6 +149,8 @@ export const POST = route<Ctx>(async (req, { params }) => {
 
   let sent = 0;
   let failed = 0;
+  let lastError = '';
+
   for (const r of inserted ?? []) {
     const toEmail = emailByCustomer.get(r.customer_id);
     let messageId = `dryrun-${crypto.randomUUID()}`;
@@ -167,9 +169,14 @@ export const POST = route<Ctx>(async (req, { params }) => {
           }),
         });
         okSend = resp.ok;
+        if (!okSend) {
+          const errBody = await resp.json().catch(() => ({}));
+          lastError = errBody.errors?.[0]?.message || resp.statusText || 'SendGrid error';
+        }
         messageId = resp.headers.get('x-message-id') ?? messageId;
-      } catch {
+      } catch (e) {
         okSend = false;
+        lastError = e instanceof Error ? e.message : 'Network error';
       }
     }
 
@@ -195,7 +202,9 @@ export const POST = route<Ctx>(async (req, { params }) => {
   return ok({
     data: { sent, failed, skipped_no_email: skipped, dry_run: !live, campaign_id: campaignId, audience_size: recipients.length },
     message: live
-      ? `Offer emailed to ${sent} guest(s) via SendGrid.`
+      ? sent > 0
+        ? `Offer emailed to ${sent} guest(s) via SendGrid.`
+        : `Failed to send email: ${lastError || 'Unknown error'}`
       : `Dry run — ${sent} guest(s) marked sent (no external email). Set SENDGRID_API_KEY and confirm to send for real.`,
   });
 });
