@@ -51,10 +51,10 @@ const fmtLkr = (n: number | null | undefined) => {
 const statusStyle: Record<string, string> = {
   PENDING_REVIEW: 'bg-amber-100 text-amber-700',
   APPROVED: 'bg-blue-100 text-blue-700',
+  DRAFT: 'bg-slate-100 text-slate-600',
   ACTIVE: 'bg-green-100 text-green-700',
   REJECTED: 'bg-red-100 text-red-600',
   EXPIRED: 'bg-slate-100 text-slate-500',
-  DRAFT: 'bg-slate-100 text-slate-600',
   AUDIENCE_READY: 'bg-blue-100 text-blue-700',
   SENDING: 'bg-amber-100 text-amber-700',
   SENT: 'bg-green-100 text-green-700',
@@ -171,12 +171,12 @@ export default function OfferIntelligence() {
   // ── KPIs (real where the data exists) ──────────────────────────────────────
   const pending = useMemo(() => offers.filter((o) => o.status === 'PENDING_REVIEW'), [offers]);
   const approved = useMemo(
-    () => offers.filter((o) => o.status === 'APPROVED' || o.status === 'ACTIVE'),
+    () => offers.filter((o) => ['APPROVED', 'DRAFT', 'ACTIVE'].includes(o.status)),
     [offers],
   );
   const totalRevenue = useMemo(
     () => offers
-      .filter((o) => ['PENDING_REVIEW', 'APPROVED', 'ACTIVE'].includes(o.status))
+      .filter((o) => ['PENDING_REVIEW', 'APPROVED', 'DRAFT', 'ACTIVE'].includes(o.status))
       .reduce((s, o) => s + (o.predicted_incremental_lkr ?? 0), 0),
     [offers],
   );
@@ -231,8 +231,11 @@ export default function OfferIntelligence() {
     switch (activeTab) {
       case 'ai':
         return pending.map(offerRow);
-      case 'drafts':
-        return campaigns.filter((c) => c.status === 'DRAFT').map(campaignRow);
+      case 'drafts': {
+        const cs = campaigns.filter((c) => c.status === 'DRAFT').map(campaignRow);
+        const os = offers.filter((o) => o.status === 'DRAFT').map(offerRow);
+        return [...cs, ...os];
+      }
       case 'scheduled':
         return campaigns.filter((c) => c.status === 'AUDIENCE_READY').map(campaignRow);
       case 'active':
@@ -705,10 +708,10 @@ function RowMenu({
                 <button className={cn(item, 'text-red-600')} onClick={() => onReject(offer)}><X className="w-4 h-4" /> Reject</button>
               </>
             )}
-            {offer.status === 'APPROVED' && (
+            {(offer.status === 'APPROVED' || offer.status === 'DRAFT') && (
               <button className={item} onClick={() => onActivate(offer)}><CheckCircle2 className="w-4 h-4 text-green-600" /> Activate</button>
             )}
-            {(offer.status === 'APPROVED' || offer.status === 'ACTIVE') && (
+            {(offer.status === 'APPROVED' || offer.status === 'DRAFT' || offer.status === 'ACTIVE') && (
               <button className={item} onClick={() => onCreateCampaign(offer)}><Send className="w-4 h-4 text-slate-500" /> Create campaign</button>
             )}
           </>

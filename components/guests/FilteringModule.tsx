@@ -294,8 +294,8 @@ export default function FilteringModule() {
     setLoadingOffers(true);
     try {
       const res = await guestApi.listOffers({ limit: 100 });
-      // Prefer ready-to-send offers; fall back to all if none are approved/active.
-      const ready = res.data.filter((o) => o.status === 'APPROVED' || o.status === 'ACTIVE');
+      // Prefer ready-to-send offers; fall back to all if none are approved/draft/active.
+      const ready = res.data.filter((o) => ['APPROVED', 'DRAFT', 'ACTIVE'].includes(o.status));
       setOffersList(ready.length ? ready : res.data);
     } catch (e) {
       flash(e instanceof Error ? e.message : 'Failed to load offers', 'err');

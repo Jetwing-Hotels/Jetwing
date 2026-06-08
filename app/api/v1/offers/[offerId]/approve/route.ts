@@ -5,7 +5,7 @@ type Ctx = { params: Promise<{ offerId: string }> };
 
 /**
  * PATCH /api/v1/offers/:offerId/approve
- * PENDING_REVIEW → APPROVED. Revenue Manager (or Admin).
+ * PENDING_REVIEW → DRAFT. Revenue Manager (or Admin).
  */
 export const PATCH = route<Ctx>(async (_req, { params }) => {
   const { offerId } = await params;
@@ -25,7 +25,7 @@ export const PATCH = route<Ctx>(async (_req, { params }) => {
 
   const { data, error } = await supabase
     .from('seasonal_offers')
-    .update({ status: 'APPROVED', approved_by: actorLabel(user), approved_at: new Date().toISOString() })
+    .update({ status: 'DRAFT', approved_by: actorLabel(user), approved_at: new Date().toISOString() })
     .eq('offer_id', offerId)
     .select()
     .single();
