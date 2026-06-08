@@ -60,7 +60,7 @@ export const POST = route<Ctx>(async (req, { params }) => {
     const cust = Array.isArray(r.customers) ? r.customers[0] : r.customers;
     const toEmail = (cust as { email?: string } | null)?.email;
     let messageId = `dryrun-${crypto.randomUUID()}`;
-    let okSend = true;
+    let okSend = !live; // In dry run, we treat it as "ok" for the record.
 
     if (live && toEmail) {
       try {
@@ -114,18 +114,25 @@ export const POST = route<Ctx>(async (req, { params }) => {
   await admin
     .from('campaigns')
     .update({
-      emails_sent: sentTotal ?? 0,
+      emails_sent: live ? (sentTotal ?? 0) : 0,
       status: (pendingLeft ?? 0) === 0 ? 'SENT' : 'SENDING',
       sent_at: new Date().toISOString(),
     })
     .eq('campaign_id', campaignId);
 
+  let statusMsg = '';
+  if (!sendgridKey) {
+    statusMsg = `Dry run — SENDGRID_API_KEY is not set.`;
+  } else if (!confirm) {
+    statusMsg = `Dry run — confirmation was not provided. Set confirm:true to send.`;
+  } else if (sent > 0) {
+    statusMsg = `Emails dispatched via SendGrid.`;
+  } else {
+    statusMsg = `Failed to dispatch emails: ${lastError || 'Unknown error'}`;
+  }
+
   return ok({
-    data: { sent, failed, dry_run: !live },
-    message: live
-      ? sent > 0
-        ? 'Emails dispatched via SendGrid.'
-        : `Failed to dispatch emails: ${lastError || 'Unknown error'}`
-      : 'Dry run — recipients marked SENT, no external email sent.',
+    data: { sent: live ? sent : 0, failed, dry_run: !live },
+    message: statusMsg,
   });
 });

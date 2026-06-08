@@ -308,11 +308,13 @@ export default function FilteringModule() {
   const doSend = async () => {
     if (!chosenOfferId) return;
     setSending(true);
+    const payload = {
+      customer_ids: Array.from(selectedIds),
+      confirm: true,
+    };
+    console.log('[FilteringModule] dispatching offer:', { offerId: chosenOfferId, payload });
     try {
-      const r = await guestApi.sendOfferToGuests(chosenOfferId, {
-        customer_ids: Array.from(selectedIds),
-        confirm: true,
-      });
+      const r = await guestApi.sendOfferToGuests(chosenOfferId, payload);
       flash(
         `${r.message}${r.data.skipped_no_email ? ` (${r.data.skipped_no_email} skipped — no email)` : ''}`,
         r.data.failed ? 'err' : 'ok',
