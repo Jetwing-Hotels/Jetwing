@@ -5,12 +5,7 @@ import { useRouter } from 'next/navigation';
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 
-import {
-  Search,
-  MapPin,
-  Calendar,
-  Clock
-} from 'lucide-react';
+import { Search } from 'lucide-react';
 
 import FilteringModule from '@/components/guests/FilteringModule';
 import OfferIntelligence from '@/components/guests/OfferIntelligence';
@@ -90,17 +85,8 @@ export default function GuestsPage() {
         </div>
       </div>
 
-      <div className="relative">
-        <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input 
-          type="text" 
-          placeholder="Search by name, email, passport or booking ID..." 
-          className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-sm focus:border-lime-500 focus:ring-1 focus:ring-lime-500 outline-none shadow-sm transition-all"
-        />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1 gap-6">
+        <div>
           {view === 'analytics' ? (
             <AnalyticsView
               timePeriod={timePeriod}
@@ -117,47 +103,6 @@ export default function GuestsPage() {
               </CardContent>
             </Card>
           )}
-        </div>
-
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base font-bold">Unified Profile Insights</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-emerald-50 text-emerald-700"><MapPin className="w-4 h-4" /></div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">Cross-Property Guest</p>
-                  <p className="text-xs text-slate-500 mt-0.5">34% of profiles recorded spent stays across more than 2 individual hotels.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-amber-50 text-amber-700"><Calendar className="w-4 h-4" /></div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">Average Lead Time</p>
-                  <p className="text-xs text-slate-500 mt-0.5">22 days for domestic leisure booking variants.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-pink-50 text-pink-700">
-                  <Clock className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">Peak Engagement Window</p>
-                  <p className="text-xs text-slate-500 mt-0.5">Guests are most interactive with feedback prompts within 48 hours following checkout events.</p>
-                </div>
-              </div>
-              <div className="pt-4 border-t border-slate-100">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Top System Segments</p>
-                <div className="flex flex-wrap gap-1.5">
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-800">Domestic Leisure</span>
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-800">Eco-Conscious</span>
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-pink-50 text-pink-800">Wellness Seekers</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>

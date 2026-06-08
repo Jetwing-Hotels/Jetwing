@@ -147,40 +147,41 @@ const AnalyticsView = (_props: AnalyticsViewProps) => {
                 ))}
               </div>
 
-              {/* Guest Growth */}
-              <div className="mt-6 p-4 rounded-lg border" style={{ borderColor: '#E5E5E5' }}>
-                <p className="text-sm font-semibold mb-2">Guest Growth (bookings / month)</p>
-                <div className="w-full h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={data.growth}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F0F0" />
-                      <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                      <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
-                      <Tooltip />
-                      <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
-                      <Line type="monotone" dataKey="guests" name="Bookings" stroke="#8B9E23" strokeWidth={2.5} dot={{ r: 3 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
+              {/* Two-column charts: Guest Growth + Booking Source Trend */}
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-lg border" style={{ borderColor: '#E5E5E5' }}>
+                  <p className="text-sm font-semibold mb-2">Guest Growth (bookings / month)</p>
+                  <div className="w-full h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={data.growth}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F0F0" />
+                        <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                        <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                        <Tooltip />
+                        <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
+                        <Line type="monotone" dataKey="guests" name="Bookings" stroke="#8B9E23" strokeWidth={2.5} dot={{ r: 3 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
-              </div>
 
-              {/* Booking Source Trend */}
-              <div className="mt-6 p-4 rounded-lg border" style={{ borderColor: '#E5E5E5' }}>
-                <p className="text-sm font-semibold mb-2">Booking Source Trend</p>
-                <div className="w-full h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data.bookingSources}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F0F0" />
-                      <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                      <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                      <Tooltip />
-                      <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
-                      <Bar dataKey="Direct" stackId="a" fill="#8B9E23" />
-                      <Bar dataKey="OTA" stackId="a" fill="#8884d8" />
-                      <Bar dataKey="TravelAgent" name="Travel Agent" stackId="a" fill="#ffc658" />
-                      <Bar dataKey="Other" stackId="a" fill="#cbd5e1" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <div className="p-4 rounded-lg border" style={{ borderColor: '#E5E5E5' }}>
+                  <p className="text-sm font-semibold mb-2">Booking Source Trend</p>
+                  <div className="w-full h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={data.bookingSources}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F0F0" />
+                        <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                        <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                        <Tooltip />
+                        <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
+                        <Bar dataKey="Direct" stackId="a" fill="#8B9E23" />
+                        <Bar dataKey="OTA" stackId="a" fill="#8884d8" />
+                        <Bar dataKey="TravelAgent" name="Travel Agent" stackId="a" fill="#ffc658" />
+                        <Bar dataKey="Other" stackId="a" fill="#cbd5e1" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </div>
 
