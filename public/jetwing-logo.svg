@@ -1,8 +1,0 @@
-<svg viewBox="0 0 512 384" xmlns="http://www.w3.org/2000/svg">
-  <!-- Yellow circle -->
-  <ellipse cx="340" cy="120" rx="80" ry="95" fill="#FFC107"/>
-  <!-- Pink circle -->
-  <ellipse cx="160" cy="220" rx="110" ry="100" fill="#E91E8C"/>
-  <!-- Red circle -->
-  <ellipse cx="320" cy="220" rx="100" ry="95" fill="#DC143C"/>
-</svg>

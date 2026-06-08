@@ -30,7 +30,7 @@ export async function exportSustainabilityReport(container: HTMLElement, options
   const blockElements = (markedBlocks.length ? markedBlocks : Array.from(container.children))
     .filter((child): child is HTMLElement => child instanceof HTMLElement);
 
-  const logoPngDataUrl = await loadLogoPngDataUrl('/jetwing-logo.svg');
+  const logoPngDataUrl = await loadLogoPngDataUrl('/jetwing-logo.png');
   const logoImage = logoPngDataUrl ? await loadImage(logoPngDataUrl) : null;
 
   const drawHeader = () => {
@@ -130,18 +130,21 @@ async function loadLogoPngDataUrl(path: string) {
     if (!response.ok) {
       return null;
     }
-    const svg = await response.text();
-    const svgDataUrl = `data:image/svg+xml;base64,${toBase64(svg)}`;
-    const img = await loadImage(svgDataUrl);
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const img = await loadImage(objectUrl);
     const canvas = document.createElement('canvas');
     canvas.width = img.width;
     canvas.height = img.height;
     const ctx = canvas.getContext('2d');
     if (!ctx) {
+      URL.revokeObjectURL(objectUrl);
       return null;
     }
     ctx.drawImage(img, 0, 0);
-    return canvas.toDataURL('image/png');
+    const pngDataUrl = canvas.toDataURL('image/png');
+    URL.revokeObjectURL(objectUrl);
+    return pngDataUrl;
   } catch {
     return null;
   }
@@ -169,11 +172,3 @@ function hexToRgb(hex: string) {
   };
 }
 
-function toBase64(value: string) {
-  const bytes = new TextEncoder().encode(value);
-  let binary = '';
-  bytes.forEach((b) => {
-    binary += String.fromCharCode(b);
-  });
-  return btoa(binary);
-}

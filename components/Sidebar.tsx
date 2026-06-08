@@ -143,7 +143,7 @@ export function Sidebar() {
         className="flex items-center gap-3 px-6 py-8 border-b"
         style={{ borderColor: "#E5E5E5" }}
       >
-        <img src="/jetwing-logo.svg" alt="Jetwing Logo" className="w-8 h-8" />
+        <img src="/jetwing-logo.png" alt="Jetwing Logo" className="w-8 h-8" />
         <span
           className="text-xl font-bold tracking-tight"
           style={{ color: "#8B9E23" }}
