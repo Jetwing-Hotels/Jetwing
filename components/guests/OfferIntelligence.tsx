@@ -329,8 +329,10 @@ export default function OfferIntelligence() {
 
   const onSend = (c: Campaign) => {
     if (!window.confirm('Send this campaign now? It runs as a safe dry run unless SendGrid is configured.')) return;
+    const body = { confirm: true };
+    console.log('[OfferIntelligence] dispatching campaign:', { campaignId: c.campaign_id, body });
     return withBusy(c.campaign_id, async () => {
-      const r = await guestApi.sendCampaign(c.campaign_id);
+      const r = await guestApi.sendCampaign(c.campaign_id, body);
       flash(`${r.message} (${r.data.sent} sent, ${r.data.failed} failed)`, r.data.failed ? 'err' : 'ok');
       await load();
     });

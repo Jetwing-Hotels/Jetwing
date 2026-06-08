@@ -149,10 +149,12 @@ export const POST = route<Ctx>(async (req, { params }) => {
 
   let sent = 0;
   let failed = 0;
+  let lastError = '';
+
   for (const r of inserted ?? []) {
     const toEmail = emailByCustomer.get(r.customer_id);
     let messageId = `dryrun-${crypto.randomUUID()}`;
-    let okSend = true;
+    let okSend = !live; // In dry run, we treat it as "ok" for the record.
 
     if (live && toEmail) {
       try {
@@ -167,9 +169,14 @@ export const POST = route<Ctx>(async (req, { params }) => {
           }),
         });
         okSend = resp.ok;
+        if (!okSend) {
+          const errBody = await resp.json().catch(() => ({}));
+          lastError = errBody.errors?.[0]?.message || resp.statusText || 'SendGrid error';
+        }
         messageId = resp.headers.get('x-message-id') ?? messageId;
-      } catch {
+      } catch (e) {
         okSend = false;
+        lastError = e instanceof Error ? e.message : 'Network error';
       }
     }
 
@@ -188,14 +195,23 @@ export const POST = route<Ctx>(async (req, { params }) => {
 
   await admin
     .from('campaigns')
-    .update({ emails_sent: sent, status: 'SENT', sent_at: new Date().toISOString() })
+    .update({ emails_sent: live ? sent : 0, status: 'SENT', sent_at: new Date().toISOString() })
     .eq('campaign_id', campaignId);
 
   const skipped = customer_ids.length - recipients.length;
+  let statusMsg = '';
+  if (!sendgridKey) {
+    statusMsg = `Dry run — SENDGRID_API_KEY is not set.`;
+  } else if (!confirm) {
+    statusMsg = `Dry run — confirmation was not provided. Set confirm:true to send.`;
+  } else if (sent > 0) {
+    statusMsg = `Offer emailed to ${sent} guest(s) via SendGrid.`;
+  } else {
+    statusMsg = `Failed to send email: ${lastError || 'Unknown error'}`;
+  }
+
   return ok({
-    data: { sent, failed, skipped_no_email: skipped, dry_run: !live, campaign_id: campaignId, audience_size: recipients.length },
-    message: live
-      ? `Offer emailed to ${sent} guest(s) via SendGrid.`
-      : `Dry run — ${sent} guest(s) marked sent (no external email). Set SENDGRID_API_KEY and confirm to send for real.`,
+    data: { sent: live ? sent : 0, failed, skipped_no_email: skipped, dry_run: !live, campaign_id: campaignId, audience_size: recipients.length },
+    message: statusMsg,
   });
 });
