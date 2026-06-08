@@ -35,6 +35,16 @@ export default function GuestsPage() {
       setView(viewParam);
     }
 
+    const periodParam = params.get('period');
+    if (periodParam) {
+      setTimePeriod(periodParam);
+    }
+    const fromParam = params.get('from');
+    const toParam = params.get('to');
+    if (fromParam || toParam) {
+      setCustomRange({ from: fromParam || '', to: toParam || '' });
+    }
+
     const handler = (e: Event) => {
       const customEvent = e as CustomEvent;
       if (customEvent?.detail?.view) {
@@ -51,19 +61,21 @@ export default function GuestsPage() {
     const params = new URLSearchParams(window.location.search);
     params.set('period', period);
     if (period === 'custom') {
-      if (opts?.from) params.set('from', opts.from);
-      if (opts?.to) params.set('to', opts.to);
+      const newFrom = opts?.from ?? customRange.from;
+      const newTo = opts?.to ?? customRange.to;
+      if (newFrom) params.set('from', newFrom);
+      if (newTo) params.set('to', newTo);
+      setCustomRange({ from: newFrom, to: newTo });
     } else {
       params.delete('from');
       params.delete('to');
+      setCustomRange({ from: '', to: '' });
     }
     try {
       router.replace(window.location.pathname + (params.toString() ? '?' + params.toString() : ''));
     } catch (e) {
       window.history.replaceState({}, '', window.location.pathname + (params.toString() ? '?' + params.toString() : ''));
     }
-
-
   };
 
   if (view === 'filtering') return <FilteringModule />;
@@ -92,6 +104,7 @@ export default function GuestsPage() {
           {view === 'analytics' ? (
             <AnalyticsView
               timePeriod={timePeriod}
+              customRange={customRange}
               updatePeriod={updatePeriod}
             />
           ) : (
