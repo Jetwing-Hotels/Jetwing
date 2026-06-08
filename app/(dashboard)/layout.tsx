@@ -21,9 +21,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="flex h-full">
       <Sidebar />
-      <div className="flex-1 ml-64 flex flex-col">
+      <div className="flex-1 lg:ml-64 flex flex-col min-w-0">
         <TopNav email={user.email ?? ''} roles={roles} />
-        <main className="flex-1 p-8 overflow-y-auto">{children}</main>
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">{children}</main>
       </div>
     </div>
   );

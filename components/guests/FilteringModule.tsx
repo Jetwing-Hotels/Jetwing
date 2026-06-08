@@ -307,9 +307,10 @@ export default function FilteringModule() {
 
   const doSend = async () => {
     if (!chosenOfferId) return;
+    if (!window.confirm(`Email this offer to ${selectedIds.size} selected guest${selectedIds.size > 1 ? 's' : ''}? Real emails are sent when email is configured.`)) return;
     setSending(true);
     try {
-      const r = await guestApi.sendOfferToGuests(chosenOfferId, { customer_ids: Array.from(selectedIds) });
+      const r = await guestApi.sendOfferToGuests(chosenOfferId, { customer_ids: Array.from(selectedIds), confirm: true });
       flash(
         `${r.message}${r.data.skipped_no_email ? ` (${r.data.skipped_no_email} skipped — no email)` : ''}`,
         r.data.failed ? 'err' : 'ok',

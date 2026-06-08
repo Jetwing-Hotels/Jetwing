@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Keep nodemailer out of the bundler — it's a Node-only lib used by API routes.
+  serverExternalPackages: ['nodemailer'],
 };
 
 export default nextConfig;

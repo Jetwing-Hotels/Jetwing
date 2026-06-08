@@ -2,7 +2,9 @@ import { z } from 'zod';
 import { requireRevenueManager, actorLabel } from '@/lib/api/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { route, ok, notFound, badRequest, parseBody } from '@/lib/api/http';
+import { sendEmail, emailConfigured } from '@/lib/email/mailer';
 
+export const runtime = 'nodejs'; // Nodemailer needs the Node runtime
 export const maxDuration = 300;
 
 type Ctx = { params: Promise<{ offerId: string }> };
@@ -55,12 +57,16 @@ function buildEmail(
       <p style="font-size:15px;line-height:1.6;color:#333">${esc(offer.offer_description)}</p>
       ${discount ? `<p style="display:inline-block;background:#f0f5e6;color:#5f6e18;font-weight:bold;padding:10px 18px;border-radius:8px;font-size:15px;margin:8px 0">${esc(discount)}</p>` : ''}
       <p style="font-size:15px;margin-top:24px">We would be delighted to welcome you in ${offer.target_year}. Reply to this email or contact your Jetwing reservations team to book.</p>
+      <div style="margin:28px 0 8px">
+        <a href="https://www.jetwinghotels.com/" target="_blank" style="display:inline-block;background:#8B9E23;color:#ffffff;text-decoration:none;font-weight:bold;font-size:15px;padding:14px 28px;border-radius:8px">Explore Jetwing Hotels →</a>
+      </div>
+      <p style="font-size:13px;color:#888;margin:6px 0 0">Or visit <a href="https://www.jetwinghotels.com/" target="_blank" style="color:#5f6e18">www.jetwinghotels.com</a> for more details.</p>
       <p style="font-size:14px;color:#888;margin-top:32px">Warm regards,<br/>The Jetwing Symphony Team</p>
     </div>
-    <div style="background:#1a1a1a;padding:16px 32px"><span style="color:#9a9a9a;font-size:11px">Jetwing Symphony PLC · Sustainable luxury hospitality, Sri Lanka</span></div>
+    <div style="background:#1a1a1a;padding:16px 32px"><span style="color:#9a9a9a;font-size:11px">Jetwing Symphony PLC · Sustainable luxury hospitality, Sri Lanka · <a href="https://www.jetwinghotels.com/" target="_blank" style="color:#b9c46b">jetwinghotels.com</a></span></div>
   </div></body></html>`;
 
-  const text = `Dear ${firstName || 'Guest'},\n\n${offer.offer_title}\n${property} · ${offer.offer_type}\n\n${offer.offer_description}\n${discount ? `\n${discount}\n` : ''}\nWe would be delighted to welcome you in ${offer.target_year}. Reply to this email or contact your Jetwing reservations team to book.\n\nWarm regards,\nThe Jetwing Symphony Team`;
+  const text = `Dear ${firstName || 'Guest'},\n\n${offer.offer_title}\n${property} · ${offer.offer_type}\n\n${offer.offer_description}\n${discount ? `\n${discount}\n` : ''}\nWe would be delighted to welcome you in ${offer.target_year}. Reply to this email or contact your Jetwing reservations team to book.\n\nExplore Jetwing Hotels and find more details: https://www.jetwinghotels.com/\n\nWarm regards,\nThe Jetwing Symphony Team`;
 
   return { subject, html, text };
 }
@@ -141,35 +147,29 @@ export const POST = route<Ctx>(async (req, { params }) => {
     .select('audience_id, customer_id, email_subject, email_html_body');
   if (audErr) throw new Error(audErr.message);
 
-  // 5. Dispatch (dry run unless SendGrid configured AND confirm:true).
-  const sendgridKey = process.env.SENDGRID_API_KEY;
-  const fromEmail = process.env.SENDGRID_FROM_EMAIL ?? 'offers@jetwingsymphony.com';
-  const live = Boolean(sendgridKey) && confirm === true;
+  // 5. Dispatch (dry run unless SMTP configured AND confirm:true).
+  const live = emailConfigured() && confirm === true;
   const emailByCustomer = new Map(recipients.map((c) => [c.customer_id, c.email as string]));
 
   let sent = 0;
   let failed = 0;
+  let firstError: string | undefined;
   for (const r of inserted ?? []) {
     const toEmail = emailByCustomer.get(r.customer_id);
     let messageId = `dryrun-${crypto.randomUUID()}`;
     let okSend = true;
 
     if (live && toEmail) {
-      try {
-        const resp = await fetch('https://api.sendgrid.com/v3/mail/send', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${sendgridKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            personalizations: [{ to: [{ email: toEmail }] }],
-            from: { email: fromEmail },
-            subject: r.email_subject ?? 'A seasonal offer from Jetwing',
-            content: [{ type: 'text/html', value: r.email_html_body }],
-          }),
-        });
-        okSend = resp.ok;
-        messageId = resp.headers.get('x-message-id') ?? messageId;
-      } catch {
-        okSend = false;
+      const res = await sendEmail({
+        to: toEmail,
+        subject: r.email_subject ?? 'A seasonal offer from Jetwing',
+        html: r.email_html_body ?? '',
+      });
+      okSend = res.ok;
+      if (res.messageId) messageId = res.messageId;
+      if (!res.ok && !firstError) {
+        firstError = res.error;
+        console.error(`[send-to-guests] email to ${toEmail} failed:`, res.error);
       }
     }
 
@@ -195,7 +195,9 @@ export const POST = route<Ctx>(async (req, { params }) => {
   return ok({
     data: { sent, failed, skipped_no_email: skipped, dry_run: !live, campaign_id: campaignId, audience_size: recipients.length },
     message: live
-      ? `Offer emailed to ${sent} guest(s) via SendGrid.`
-      : `Dry run — ${sent} guest(s) marked sent (no external email). Set SENDGRID_API_KEY and confirm to send for real.`,
+      ? `Offer emailed to ${sent} guest(s)${failed ? `, ${failed} failed${firstError ? `: ${firstError}` : ''}` : ''}.`
+      : emailConfigured()
+        ? `Dry run — ${sent} guest(s) marked sent. Confirm to send for real.`
+        : `Dry run — ${sent} marked sent (SMTP not configured: set SMTP_USER / SMTP_PASS).`,
   });
 });

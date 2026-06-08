@@ -20,6 +20,8 @@ import {
   // ShieldAlert,
   // Target,
   ChevronRight,
+  Menu,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +61,10 @@ const menuItems = [
 export function Sidebar() {
   const pathname = usePathname();
 
+  // Mobile drawer open/closed (ignored on lg+ where the sidebar is always shown).
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const closeMobile = () => setMobileOpen(false);
+
   const [expandedSubmenus, setExpandedSubmenus] = useState<Set<string>>(
     new Set(),
   );
@@ -75,6 +81,9 @@ export function Sidebar() {
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setExpandedSubmenus(new Set(defaults));
+    // Close the mobile drawer whenever the route changes (after navigation).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMobileOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -135,10 +144,35 @@ export function Sidebar() {
   };
 
   return (
-    <div
-      className="flex flex-col h-screen w-64 border-r fixed left-0 top-0"
-      style={{ backgroundColor: "#ffffff", borderColor: "#E5E5E5" }}
-    >
+    <>
+      {/* Mobile hamburger — only on small screens. Sits above the top bar. */}
+      <button
+        type="button"
+        aria-label={mobileOpen ? "Close menu" : "Open menu"}
+        aria-expanded={mobileOpen}
+        onClick={() => setMobileOpen((v) => !v)}
+        className="lg:hidden fixed top-3 left-4 z-50 p-2 rounded-lg border bg-white shadow-sm"
+        style={{ borderColor: "#E5E5E5", color: "#8B9E23" }}
+      >
+        {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+      </button>
+
+      {/* Backdrop behind the drawer on mobile. */}
+      {mobileOpen && (
+        <div
+          aria-hidden
+          onClick={closeMobile}
+          className="lg:hidden fixed inset-0 z-30 bg-black/40 backdrop-blur-[1px]"
+        />
+      )}
+
+      <div
+        className={cn(
+          "flex flex-col h-screen w-64 border-r fixed left-0 top-0 z-40 transition-transform duration-300 ease-in-out lg:translate-x-0",
+          mobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full",
+        )}
+        style={{ backgroundColor: "#ffffff", borderColor: "#E5E5E5" }}
+      >
       <div
         className="flex items-center gap-3 px-6 py-8 border-b"
         style={{ borderColor: "#E5E5E5" }}
@@ -158,7 +192,12 @@ export function Sidebar() {
           const hasSubmenu = !!item.submenu;
           const isExpanded = item.id ? expandedSubmenus.has(item.id) : false;
 
-          const isItemPage = item.href ? pathname.includes(item.href) : false;
+          // Exact match for the root dashboard; prefix match for section pages.
+          // (Avoids "/" matching every route, which made Dashboard always active.)
+          const isItemPage =
+            item.href === "/"
+              ? pathname === "/"
+              : pathname.startsWith(item.href);
 
           return (
             <div key={item.href}>
@@ -183,6 +222,7 @@ export function Sidebar() {
               >
                 <Link
                   href={item.href}
+                  onClick={closeMobile}
                   className="flex items-center gap-3 flex-1"
                 >
                   <item.icon
@@ -250,6 +290,8 @@ export function Sidebar() {
                           if (item.id === "sustainability") {
                             setCurrentSustainabilityView(sub.id);
                           }
+
+                          closeMobile();
                         }}
                         className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors"
                         style={{
@@ -283,6 +325,7 @@ export function Sidebar() {
       <div className="p-4 border-t" style={{ borderColor: "#E5E5E5" }}>
         <Link
           href="/settings"
+          onClick={closeMobile}
           className="flex items-center gap-3 px-4 py-3 rounded-lg transition-all"
           style={{ color: "#666" }}
         >
@@ -290,6 +333,7 @@ export function Sidebar() {
           <span className="font-medium text-sm">Settings</span>
         </Link>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

@@ -73,11 +73,12 @@ const typeIcon: Record<string, React.ComponentType<{ className?: string }>> = {
   Campaign: Send,
 };
 
-type TabKey = 'all' | 'ai' | 'drafts' | 'scheduled' | 'active' | 'completed';
+type TabKey = 'all' | 'ai' | 'approved' | 'drafts' | 'scheduled' | 'active' | 'completed';
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'all', label: 'All Campaigns' },
   { key: 'ai', label: 'AI Recommendations' },
+  { key: 'approved', label: 'Approved Offers' },
   { key: 'drafts', label: 'Drafts' },
   { key: 'scheduled', label: 'Scheduled' },
   { key: 'active', label: 'Active' },
@@ -231,6 +232,8 @@ export default function OfferIntelligence() {
     switch (activeTab) {
       case 'ai':
         return pending.map(offerRow);
+      case 'approved':
+        return approved.map(offerRow);
       case 'drafts':
         return campaigns.filter((c) => c.status === 'DRAFT').map(campaignRow);
       case 'scheduled':
@@ -243,7 +246,7 @@ export default function OfferIntelligence() {
       default:
         return campaigns.map(campaignRow);
     }
-  }, [activeTab, campaigns, pending, offersById]);
+  }, [activeTab, campaigns, pending, approved, offersById]);
 
   const visibleRows = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -315,6 +318,37 @@ export default function OfferIntelligence() {
     await load();
   });
 
+  // Send an approved/active offer straight to guests (every guest with an email
+  // on file). Reuses the send-to-guests pipeline: it spins up a tracked campaign,
+  // writes a personalised email per guest and dispatches via SMTP.
+  const onSendOffer = async (o: OfferWithProperty) => {
+    setMenuId(null);
+    let recipients: { id: string }[];
+    try {
+      const res = await guestApi.listCustomers({ limit: 500 });
+      recipients = res.data.filter((c) => c.email && c.email.trim());
+    } catch (e) {
+      flash(e instanceof Error ? e.message : 'Failed to load guests', 'err');
+      return;
+    }
+    if (recipients.length === 0) {
+      flash('No guests with an email address to send to.', 'err');
+      return;
+    }
+    if (!window.confirm(
+      `Email “${o.offer_title}” to ${recipients.length} guest(s) with an email on file?\n\nReal emails are sent when SMTP is configured (otherwise this is a safe dry run).`,
+    )) return;
+    await withBusy(o.offer_id, async () => {
+      const r = await guestApi.sendOfferToGuests(o.offer_id, {
+        customer_ids: recipients.map((c) => c.id),
+        confirm: true,
+      });
+      const skipped = r.data.skipped_no_email ? ` ${r.data.skipped_no_email} skipped.` : '';
+      flash(`${r.message}${skipped}`, r.data.failed ? 'err' : 'ok');
+      await load();
+    });
+  };
+
   const onBuildAudience = (c: Campaign) => withBusy(c.campaign_id, async () => {
     const r = await guestApi.buildAudience(c.campaign_id);
     flash(`Audience built: ${r.data.audience_size} recipients (${r.data.added} new).`);
@@ -328,9 +362,9 @@ export default function OfferIntelligence() {
   });
 
   const onSend = (c: Campaign) => {
-    if (!window.confirm('Send this campaign now? It runs as a safe dry run unless SendGrid is configured.')) return;
+    if (!window.confirm('Send this campaign now? Real emails are sent when email (SMTP) is configured.')) return;
     return withBusy(c.campaign_id, async () => {
-      const r = await guestApi.sendCampaign(c.campaign_id);
+      const r = await guestApi.sendCampaign(c.campaign_id, true);
       flash(`${r.message} (${r.data.sent} sent, ${r.data.failed} failed)`, r.data.failed ? 'err' : 'ok');
       await load();
     });
@@ -623,6 +657,17 @@ export default function OfferIntelligence() {
                           </td>
                           <td className="p-4 pr-6">
                             <div className="flex items-center justify-end gap-1 relative">
+                              {r.kind === 'offer' && (r.status === 'APPROVED' || r.status === 'ACTIVE') && (
+                                <button
+                                  onClick={() => onSendOffer(r.raw as OfferWithProperty)}
+                                  disabled={busyId === r.id}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white disabled:opacity-50"
+                                  style={{ background: COLORS.goldGradient }}
+                                  title="Email this offer to guests"
+                                >
+                                  <Mail className="w-3.5 h-3.5" /> Send
+                                </button>
+                              )}
                               <button
                                 onClick={() => setDetail(r)}
                                 className="p-2 rounded-lg hover:bg-slate-100 text-slate-500"
@@ -646,6 +691,7 @@ export default function OfferIntelligence() {
                                   onReject={onReject}
                                   onActivate={onActivate}
                                   onCreateCampaign={onCreateCampaign}
+                                  onSendOffer={onSendOffer}
                                   onBuildAudience={onBuildAudience}
                                   onGenerateEmails={onGenerateEmails}
                                   onSend={onSend}
@@ -673,7 +719,7 @@ export default function OfferIntelligence() {
 // ── Row actions dropdown ───────────────────────────────────────────────────────
 function RowMenu({
   row, onClose, onApprove, onReject, onActivate, onCreateCampaign,
-  onBuildAudience, onGenerateEmails, onSend, onView,
+  onSendOffer, onBuildAudience, onGenerateEmails, onSend, onView,
 }: {
   row: Row;
   onClose: () => void;
@@ -681,6 +727,7 @@ function RowMenu({
   onReject: (o: OfferWithProperty) => void;
   onActivate: (o: OfferWithProperty) => void;
   onCreateCampaign: (o: OfferWithProperty) => void;
+  onSendOffer: (o: OfferWithProperty) => void;
   onBuildAudience: (c: Campaign) => void;
   onGenerateEmails: (c: Campaign) => void;
   onSend: (c: Campaign) => void;
@@ -709,7 +756,10 @@ function RowMenu({
               <button className={item} onClick={() => onActivate(offer)}><CheckCircle2 className="w-4 h-4 text-green-600" /> Activate</button>
             )}
             {(offer.status === 'APPROVED' || offer.status === 'ACTIVE') && (
-              <button className={item} onClick={() => onCreateCampaign(offer)}><Send className="w-4 h-4 text-slate-500" /> Create campaign</button>
+              <>
+                <button className={cn(item, 'text-green-700 font-semibold')} onClick={() => onSendOffer(offer)}><Mail className="w-4 h-4 text-green-600" /> Send to guests</button>
+                <button className={item} onClick={() => onCreateCampaign(offer)}><Send className="w-4 h-4 text-slate-500" /> Create campaign</button>
+              </>
             )}
           </>
         ) : (

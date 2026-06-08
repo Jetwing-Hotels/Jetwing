@@ -2,23 +2,24 @@ import { z } from 'zod';
 import { requireAdmin } from '@/lib/api/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { route, ok, notFound, badRequest, parseBody } from '@/lib/api/http';
+import { sendEmail, emailConfigured } from '@/lib/email/mailer';
 
+export const runtime = 'nodejs'; // Nodemailer needs the Node runtime
 export const maxDuration = 300;
 
 type Ctx = { params: Promise<{ campaignId: string }> };
 
 const bodySchema = z.object({
-  confirm: z.boolean().optional(), // require true to actually hit SendGrid
+  confirm: z.boolean().optional(), // require true to actually send email
   limit: z.number().int().min(1).max(1000).optional(),
 });
 
 /**
  * POST /api/v1/campaigns/:campaignId/send
- * Dispatch generated emails. Admin only.
+ * Dispatch generated emails via SMTP (Gmail). Admin only.
  *
  * Safe by default: runs as a DRY RUN (marks recipients SENT, no external email)
- * unless SENDGRID_API_KEY is configured AND the request body has { confirm: true }.
- * This prevents accidentally emailing real/demo addresses from a half-built system.
+ * unless SMTP is configured (SMTP_USER/SMTP_PASS) AND the body has { confirm: true }.
  */
 export const POST = route<Ctx>(async (req, { params }) => {
   const { campaignId } = await params;
@@ -47,9 +48,7 @@ export const POST = route<Ctx>(async (req, { params }) => {
     throw badRequest('No generated emails ready to send. Build the audience and generate emails first.');
   }
 
-  const sendgridKey = process.env.SENDGRID_API_KEY;
-  const fromEmail = process.env.SENDGRID_FROM_EMAIL ?? 'offers@jetwingsymphony.com';
-  const live = Boolean(sendgridKey) && confirm === true;
+  const live = emailConfigured() && confirm === true;
 
   let sent = 0;
   let failed = 0;
@@ -62,22 +61,15 @@ export const POST = route<Ctx>(async (req, { params }) => {
     let okSend = true;
 
     if (live && toEmail) {
-      try {
-        const resp = await fetch('https://api.sendgrid.com/v3/mail/send', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${sendgridKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            personalizations: [{ to: [{ email: toEmail }] }],
-            from: { email: fromEmail },
-            subject: r.email_subject ?? 'A seasonal offer from Jetwing',
-            content: [{ type: 'text/html', value: r.email_html_body }],
-          }),
-        });
-        okSend = resp.ok;
-        messageId = resp.headers.get('x-message-id') ?? messageId;
-      } catch {
-        okSend = false;
-      }
+      const res = await sendEmail({
+        to: toEmail,
+        subject: r.email_subject ?? 'A seasonal offer from Jetwing',
+        html: r.email_html_body ?? '',
+      });
+      okSend = res.ok;
+      if (res.messageId) messageId = res.messageId;
+    } else if (live && !toEmail) {
+      okSend = false; // live send but no address on file
     }
 
     const { error: updErr } = await admin
@@ -116,6 +108,10 @@ export const POST = route<Ctx>(async (req, { params }) => {
 
   return ok({
     data: { sent, failed, dry_run: !live },
-    message: live ? 'Emails dispatched via SendGrid.' : 'Dry run — recipients marked SENT, no external email sent.',
+    message: live
+      ? `Emails dispatched via SMTP (${sent} sent, ${failed} failed).`
+      : emailConfigured()
+        ? 'Dry run — pass confirm:true to send for real.'
+        : 'Dry run — SMTP not configured (set SMTP_USER / SMTP_PASS).',
   });
 });
