@@ -203,7 +203,7 @@ export interface Database {
           llm_rationale: string | null;
           target_guest_segment: string | null;
           sustainability_angle: string | null;
-          status: 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'EXPIRED';
+          status: 'PENDING_REVIEW' | 'APPROVED' | 'DRAFT' | 'REJECTED' | 'ACTIVE' | 'EXPIRED';
           rejection_reason: string | null;
           approved_by: string | null;
           approved_at: Timestamp | null;
@@ -217,7 +217,7 @@ export interface Database {
           'llm_rationale' | 'target_guest_segment' | 'sustainability_angle' | 'rejection_reason' |
           'approved_by' | 'approved_at' | 'valid_from' | 'valid_to'> & {
           offer_id?: string;
-          status?: 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'EXPIRED';
+          status?: 'PENDING_REVIEW' | 'APPROVED' | 'DRAFT' | 'REJECTED' | 'ACTIVE' | 'EXPIRED';
           created_at?: Timestamp;
           discount_type?: 'Percentage' | 'Complimentary' | 'Value_Add' | 'Rate_Plan' | null;
           discount_value?: number | null;

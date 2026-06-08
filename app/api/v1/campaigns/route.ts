@@ -40,13 +40,13 @@ const createSchema = z.object({
 
 /**
  * POST /api/v1/campaigns
- * Create a campaign from approved/active offers. Revenue Manager (or Admin).
+ * Create a campaign from approved (DRAFT) or ACTIVE offers. Revenue Manager (or Admin).
  */
 export const POST = route(async (req) => {
   const { supabase, user } = await requireRevenueManager();
   const body = await parseBody(req, createSchema);
 
-  // All referenced offers must exist and be APPROVED or ACTIVE.
+  // All referenced offers must exist and be DRAFT or ACTIVE.
   const { data: offers, error: offerErr } = await supabase
     .from('seasonal_offers')
     .select('offer_id, status')
@@ -58,9 +58,9 @@ export const POST = route(async (req) => {
   const missing = body.offer_ids.filter((id) => !found.has(id));
   if (missing.length) throw badRequest('Some offers do not exist', { missing });
 
-  const notReady = (offers ?? []).filter((o) => !['APPROVED', 'ACTIVE'].includes(o.status));
+  const notReady = (offers ?? []).filter((o) => !['DRAFT', 'ACTIVE'].includes(o.status));
   if (notReady.length) {
-    throw badRequest('Campaigns can only include APPROVED or ACTIVE offers', {
+    throw badRequest('Campaigns can only include DRAFT or ACTIVE offers', {
       invalid: notReady.map((o) => ({ offer_id: o.offer_id, status: o.status })),
     });
   }

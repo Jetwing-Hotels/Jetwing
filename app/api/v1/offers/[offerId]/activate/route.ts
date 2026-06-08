@@ -11,7 +11,7 @@ const bodySchema = z.object({
 
 /**
  * PATCH /api/v1/offers/:offerId/activate
- * APPROVED → ACTIVE, optionally setting validity dates. Admin only.
+ * DRAFT → ACTIVE, optionally setting validity dates. Admin only.
  */
 export const PATCH = route<Ctx>(async (req, { params }) => {
   const { offerId } = await params;
@@ -30,8 +30,8 @@ export const PATCH = route<Ctx>(async (req, { params }) => {
 
   if (readErr) throw new Error(readErr.message);
   if (!offer) throw notFound('Offer not found');
-  if (offer.status !== 'APPROVED') {
-    throw conflict(`Only APPROVED offers can be activated (current: ${offer.status})`);
+  if (offer.status !== 'DRAFT') {
+    throw conflict(`Only DRAFT offers can be activated (current: ${offer.status})`);
   }
 
   const { data, error } = await supabase
