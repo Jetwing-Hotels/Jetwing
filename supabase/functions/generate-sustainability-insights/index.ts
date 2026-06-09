@@ -1,3 +1,4 @@
+import '../_shared/deno-globals.ts';
 import { corsHeaders, json } from '../_shared/cors.ts';
 import { checkSecret } from '../_shared/supabaseAdmin.ts';
 import { makeClient, generateJson, estimateCostUsd } from '../_shared/gemini.ts';
@@ -19,14 +20,14 @@ Deno.serve(async (req) => {
   }
 
   const metrics = body.metrics as Record<string, number>;
-  const articles = body.articles as Array<{ title: string; source: string; description: string }>;
+  // News is optional — insights can be generated from the KPI metrics alone, so
+  // a missing/empty NewsAPI feed must not break Gemini generation.
+  const articles = Array.isArray(body.articles)
+    ? (body.articles as Array<{ title: string; source: string; description: string }>)
+    : [];
 
-  if (!metrics || typeof metrics !== 'object') {
+  if (!metrics || typeof metrics !== 'object' || Object.keys(metrics).length === 0) {
     return json({ error: 'metrics must be a non-empty object' }, 400);
-  }
-
-  if (!Array.isArray(articles) || articles.length === 0) {
-    return json({ error: 'articles must be a non-empty array' }, 400);
   }
 
   try {

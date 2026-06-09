@@ -49,9 +49,9 @@ export function buildInsightPrompt(
     .map(([key, value]) => `${key}: ${value}`)
     .join('\n');
 
-  const articlesText = articles
-    .map((a) => `- "${a.title}" (${a.source}): ${a.description}`)
-    .join('\n');
+  const articlesText = articles.length
+    ? articles.map((a) => `- "${a.title}" (${a.source}): ${a.description}`).join('\n')
+    : '(no recent news available — base the insights on the KPI metrics above)';
 
   const userText = [
     'CURRENT KPI METRICS',

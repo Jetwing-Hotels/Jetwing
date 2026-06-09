@@ -1,3 +1,4 @@
+import './deno-globals.ts';
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 
 /**

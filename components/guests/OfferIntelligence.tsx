@@ -29,8 +29,17 @@ import {
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
-import { guestApi, ApiClientError, type OfferWithProperty } from '@/lib/api/client';
+import {
+  guestApi,
+  ApiClientError,
+  type OfferWithProperty,
+  type OfferEditableFields,
+  type OfferCreateFields,
+  type PropertyOption,
+} from '@/lib/api/client';
 import type { Campaign } from '@/lib/supabase/types';
+
+const DISCOUNT_TYPES = ['Percentage', 'Complimentary', 'Value_Add', 'Rate_Plan'] as const;
 
 const COLORS = {
   primary: '#B38B2D',
@@ -141,6 +150,8 @@ export default function OfferIntelligence() {
   const [detail, setDetail] = useState<Row | null>(null);
   const [editing, setEditing] = useState<Row | null>(null);
   const [menuAnchorRect, setMenuAnchorRect] = useState<DOMRect | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [properties, setProperties] = useState<PropertyOption[]>([]);
 
   const flash = (msg: string, kind: 'ok' | 'err' = 'ok') => {
     setToast({ msg, kind });
@@ -173,6 +184,11 @@ export default function OfferIntelligence() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
+  // Properties list (for the manual "New Offer" form). Loaded once.
+  useEffect(() => {
+    guestApi.listProperties().then((r) => setProperties(r.data)).catch(() => {});
+  }, []);
+
   // ── KPIs (real where the data exists) ──────────────────────────────────────
   const pending = useMemo(() => offers.filter((o) => o.status === 'PENDING_REVIEW'), [offers]);
   const approved = useMemo(
@@ -199,6 +215,18 @@ export default function OfferIntelligence() {
     return m;
   }, [offers]);
 
+  // How many customers each offer has actually been sent to — summed from the
+  // emails_sent of every campaign (incl. direct sends) that references the offer.
+  const sentCountByOffer = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const c of campaigns) {
+      const ids = Array.isArray(c.offer_ids) ? (c.offer_ids as string[]) : [];
+      const sent = c.emails_sent ?? 0;
+      for (const id of ids) m.set(id, (m.get(id) ?? 0) + sent);
+    }
+    return m;
+  }, [campaigns]);
+
   const tabRows = useMemo<Row[]>(() => {
     const offerRow = (o: OfferWithProperty): Row => ({
       kind: 'offer',
@@ -206,7 +234,7 @@ export default function OfferIntelligence() {
       title: o.offer_title,
       subtitle: o.properties?.property_name ?? 'Property',
       segment: o.target_guest_segment ?? o.properties?.property_name ?? 'All guests',
-      count: 1,
+      count: sentCountByOffer.get(o.offer_id) ?? 0,
       offerType: o.offer_type,
       status: o.status,
       financialLkr: o.predicted_incremental_lkr,
@@ -224,7 +252,7 @@ export default function OfferIntelligence() {
         title: c.campaign_name,
         subtitle: `${MONTHS[c.target_month]} ${c.target_year}`,
         segment: tiers.length ? tiers.join(', ') : 'All tiers',
-        count: ids.length,
+        count: c.emails_sent ?? 0,
         offerType: cos[0]?.offer_type ?? 'Offer',
         status: c.status,
         financialLkr: fin || null,
@@ -249,18 +277,23 @@ export default function OfferIntelligence() {
         const campaignRows = campaigns.filter((c) => ['SENDING', 'SENT'].includes(c.status)).map(campaignRow);
         return [...offerRows, ...campaignRows];
       }
-      case 'completed':
-        // !!! IMPORTANT: `status = 'COMPLETED'` is required from the backend payload/response
-        // Only show rows where the status is explicitly COMPLETED (local UI markers are not persisted)
+      case 'completed': {
+        // Expired or no-longer-valid offers (EXPIRED status, or past their valid_to),
+        // plus campaigns that have finished sending.
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const isDoneOffer = (o: OfferWithProperty) =>
+          (o.status as string) === 'EXPIRED' ||
+          (!!o.valid_to && String(o.valid_to) < todayStr);
         return [
-          ...offers.filter((o) => (o.status as string) === 'COMPLETED').map(offerRow),
-          ...campaigns.filter((c) => (c.status as string) === 'COMPLETED').map(campaignRow),
+          ...offers.filter(isDoneOffer).map(offerRow),
+          ...campaigns.filter((c) => ['SENT', 'COMPLETED'].includes(c.status as string)).map(campaignRow),
         ];
+      }
       case 'all':
       default:
         return campaigns.map(campaignRow);
     }
-  }, [activeTab, campaigns, pending, approved, offersById]);
+  }, [activeTab, offers, campaigns, pending, approved, offersById, sentCountByOffer]);
 
   const visibleRows = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -311,24 +344,35 @@ export default function OfferIntelligence() {
     } finally { setGenerating(false); }
   };
 
+  // Persist edits to an offer (in-app editor → backend PATCH).
+  const saveOfferEdits = async (offerId: string, patch: Partial<OfferEditableFields>) => {
+    await withBusy(offerId, async () => {
+      await guestApi.updateOffer(offerId, patch);
+      flash('Offer updated.');
+      await load();
+    });
+    setEditing(null);
+  };
+
+  // Create a manually authored offer (→ backend POST).
+  const createOfferManual = async (body: OfferCreateFields) => {
+    try {
+      await guestApi.createOffer(body);
+      flash(`Offer “${body.offer_title}” created.`);
+      setCreating(false);
+      await load();
+    } catch (e) {
+      flash(e instanceof Error ? e.message : 'Failed to create offer', 'err');
+    }
+  };
+
   const onApprove = (o: OfferWithProperty) => withBusy(o.offer_id, async () => {
     await guestApi.approveOffer(o.offer_id);
     flash(`Approved “${o.offer_title}”.`);
     await load();
   });
 
-  const onReject = (o: OfferWithProperty) => {
-    // kept for backwards compatibility; prefer using modal
-    const reason = window.prompt('Reason for rejecting this offer?');
-    if (!reason) return;
-    return withBusy(o.offer_id, async () => {
-      await guestApi.rejectOffer(o.offer_id, reason);
-      flash(`Rejected “${o.offer_title}”.`);
-      await load();
-    });
-  };
-
-  // New: reject modal state and opener
+  // Reject modal state and opener (replaces the old window.prompt flow).
   const [rejectTarget, setRejectTarget] = useState<OfferWithProperty | null>(null);
   const [rejectReason, setRejectReason] = useState('');
 
@@ -574,10 +618,10 @@ export default function OfferIntelligence() {
                 <Button
                   onClick={onGenerate}
                   disabled={generating}
-                  className="rounded-xl gap-2 text-white px-6 py-5 text-base font-bold"
+                  className="rounded-lg gap-1.5 text-white px-4 py-2 text-sm font-bold"
                   style={{ background: COLORS.goldGradient }}
                 >
-                  {generating ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  {generating ? <RefreshCcw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
                   Generate Recommendations
                 </Button>
               </div>
@@ -678,12 +722,22 @@ export default function OfferIntelligence() {
         {/* Table */}
         <Card className="border-none shadow-sm ring-1 ring-slate-100 overflow-visible">
           <CardContent className="p-0">
+            {/* Top-right toolbar */}
+            <div className="flex justify-end px-4 py-3 border-b border-slate-100">
+              <Button
+                onClick={() => setCreating(true)}
+                className="rounded-lg gap-1 text-white px-3 py-1.5 text-xs font-bold"
+                style={{ background: COLORS.goldGradient }}
+              >
+                New Offer
+              </Button>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
                     <tr className="bg-slate-50/60 border-b border-slate-100 text-[10px] uppercase tracking-widest text-slate-400">
                     <th className="p-4 pl-6">Offer Details</th>
-                    <th className="p-4">Count</th>
+                    <th className="p-4">Customers Sent</th>
                     <th className="p-4">Offer Type</th>
                     <th className="p-4">Status</th>
                     <th className="p-4">Financial Impact</th>
@@ -717,8 +771,8 @@ export default function OfferIntelligence() {
                             </div>
                           </td>
                           <td className="p-4">
-                            <span className="inline-flex items-center gap-1.5 text-sm text-slate-600">
-                              <Package className="w-3.5 h-3.5 text-slate-400" /> {r.count}
+                            <span className="inline-flex items-center gap-1.5 text-sm text-slate-600" title="Customers this offer has been sent to">
+                              <Users className="w-3.5 h-3.5 text-slate-400" /> {r.count}
                             </span>
                           </td>
                           <td className="p-4">
@@ -773,8 +827,8 @@ export default function OfferIntelligence() {
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
-                              {(['SENT', 'COMPLETED'].includes((r.raw as any).status as string) && (() => {
-                                const s = (r.raw as any).status as string;
+                              {(['SENT', 'COMPLETED'].includes(r.status) && (() => {
+                                const s = r.status;
                                 const key = `${r.kind}:${r.id}`;
                                 const isLocallyCompleted = !!localCompleted[key] || s === 'COMPLETED';
                                 return (
@@ -840,18 +894,22 @@ export default function OfferIntelligence() {
       {editing && (
         <EditModal
           row={editing}
+          busy={busyId === editing.id}
           onClose={() => setEditing(null)}
-          onSave={(updated) => {
-            if (updated.kind === 'offer') {
-              const u = updated.raw as OfferWithProperty;
-              setOffers((prev) => prev.map((o) => (o.offer_id === u.offer_id ? { ...o, offer_title: u.offer_title, target_guest_segment: (u.target_guest_segment ?? o.target_guest_segment), predicted_incremental_lkr: u.predicted_incremental_lkr } : o)));
-            } else {
-              const u = updated.raw as Campaign;
-              setCampaigns((prev) => prev.map((c) => (c.campaign_id === u.campaign_id ? { ...c, campaign_name: u.campaign_name, target_tiers: u.target_tiers ?? c.target_tiers, status: u.status ?? c.status } : c)));
-            }
+          onSaveOffer={saveOfferEdits}
+          onSaveCampaign={(updated) => {
+            const u = updated.raw as Campaign;
+            setCampaigns((prev) => prev.map((c) => (c.campaign_id === u.campaign_id ? { ...c, campaign_name: u.campaign_name } : c)));
             flash('Saved changes');
             setEditing(null);
           }}
+        />
+      )}
+      {creating && (
+        <CreateOfferModal
+          properties={properties}
+          onClose={() => setCreating(false)}
+          onCreate={createOfferManual}
         />
       )}
       {rejectTarget && (
@@ -1004,21 +1062,61 @@ function DetailModal({ row, onClose }: { row: Row; onClose: () => void }) {
   );
 }
 
-// ── Edit modal (in-place edits update local state optimistically) ─────────
-function EditModal({ row, onClose, onSave }: { row: Row; onClose: () => void; onSave: (r: Row) => void }) {
+// ── Field helpers ──────────────────────────────────────────────────────────────
+const fieldLabel = 'block text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1.5';
+const fieldInput = 'w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-200';
+const numOrNull = (s: string) => (s.trim() === '' ? null : Number(s));
+
+// ── Edit modal — offers persist to the backend; campaigns rename locally ────────
+function EditModal({
+  row, busy, onClose, onSaveOffer, onSaveCampaign,
+}: {
+  row: Row;
+  busy: boolean;
+  onClose: () => void;
+  onSaveOffer: (offerId: string, patch: Partial<OfferEditableFields>) => Promise<void> | void;
+  onSaveCampaign: (updated: Row) => void;
+}) {
   const isOffer = row.kind === 'offer';
   const offer = row.raw as OfferWithProperty;
   const campaign = row.raw as Campaign;
 
-  const [title, setTitle] = useState(row.title);
-  const [segment, setSegment] = useState(row.segment);
-  const [status, setStatus] = useState(row.status);
-  const [financial, setFinancial] = useState<string>(row.financialLkr != null ? String(row.financialLkr) : '');
+  const [title, setTitle] = useState(isOffer ? offer.offer_title : campaign.campaign_name);
+  const [description, setDescription] = useState(isOffer ? offer.offer_description : '');
+  const [segment, setSegment] = useState(offer.target_guest_segment ?? '');
+  const [offerType, setOfferType] = useState<string>(offer.offer_type ?? 'Package');
+  const [discountType, setDiscountType] = useState<string>(offer.discount_type ?? '');
+  const [discountValue, setDiscountValue] = useState(offer.discount_value != null ? String(offer.discount_value) : '');
+  const [incremental, setIncremental] = useState(offer.predicted_incremental_lkr != null ? String(offer.predicted_incremental_lkr) : '');
+  const [status, setStatus] = useState(offer.status ?? 'PENDING_REVIEW');
+  const [validFrom, setValidFrom] = useState(offer.valid_from ?? '');
+  const [validTo, setValidTo] = useState(offer.valid_to ?? '');
+
+  const save = () => {
+    if (!title.trim()) return;
+    if (isOffer) {
+      const patch: Partial<OfferEditableFields> = {
+        offer_title: title.trim(),
+        offer_description: description.trim() || offer.offer_description,
+        offer_type: offerType as OfferEditableFields['offer_type'],
+        discount_type: (discountType || null) as OfferEditableFields['discount_type'],
+        discount_value: numOrNull(discountValue),
+        predicted_incremental_lkr: numOrNull(incremental),
+        target_guest_segment: segment.trim() || null,
+        status: status as OfferEditableFields['status'],
+        valid_from: validFrom || null,
+        valid_to: validTo || null,
+      };
+      void onSaveOffer(offer.offer_id, patch);
+    } else {
+      onSaveCampaign({ ...row, title: title.trim(), raw: { ...campaign, campaign_name: title.trim() } as Campaign });
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in duration-200">
+      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in duration-200 max-h-[90vh] flex flex-col">
         <div className="p-6 border-b border-slate-100 flex items-start justify-between">
           <div>
             <p className="text-[11px] uppercase tracking-widest text-slate-400">{row.subtitle}</p>
@@ -1026,47 +1124,227 @@ function EditModal({ row, onClose, onSave }: { row: Row; onClose: () => void; on
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full"><X className="w-5 h-5 text-slate-500" /></button>
         </div>
-        <div className="p-6 space-y-4">
+        <div className="p-6 space-y-4 overflow-y-auto">
           <div>
-            <label className="block text-sm font-semibold text-slate-600 mb-1">Title</label>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-lg border px-3 py-2" />
+            <label className={fieldLabel}>Title</label>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} className={fieldInput} />
+          </div>
+
+          {isOffer ? (
+            <>
+              <div>
+                <label className={fieldLabel}>Description</label>
+                <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className={cn(fieldInput, 'resize-y')} />
+              </div>
+              <div>
+                <label className={fieldLabel}>Target guest segment</label>
+                <input value={segment} onChange={(e) => setSegment(e.target.value)} className={fieldInput} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={fieldLabel}>Offer type</label>
+                  <select value={offerType} onChange={(e) => setOfferType(e.target.value)} className={fieldInput}>
+                    {OFFER_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={fieldLabel}>Status</label>
+                  <select value={status} onChange={(e) => setStatus(e.target.value as OfferEditableFields['status'])} className={fieldInput}>
+                    {['PENDING_REVIEW', 'APPROVED', 'REJECTED', 'ACTIVE', 'EXPIRED'].map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={fieldLabel}>Discount type</label>
+                  <select value={discountType} onChange={(e) => setDiscountType(e.target.value)} className={fieldInput}>
+                    <option value="">None</option>
+                    {DISCOUNT_TYPES.map((t) => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={fieldLabel}>Discount value</label>
+                  <input type="number" value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} className={fieldInput} />
+                </div>
+              </div>
+              <div>
+                <label className={fieldLabel}>Predicted incremental (LKR)</label>
+                <input type="number" value={incremental} onChange={(e) => setIncremental(e.target.value)} className={fieldInput} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={fieldLabel}>Valid from</label>
+                  <input type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} className={fieldInput} />
+                </div>
+                <div>
+                  <label className={fieldLabel}>Valid to</label>
+                  <input type="date" value={validTo} onChange={(e) => setValidTo(e.target.value)} className={fieldInput} />
+                </div>
+              </div>
+            </>
+          ) : (
+            <p className="text-xs text-slate-400">Only the campaign name can be edited here.</p>
+          )}
+        </div>
+        <div className="p-4 border-t border-slate-100 flex items-center justify-end gap-3">
+          <button onClick={onClose} className="px-4 py-2 rounded-lg border text-sm">Cancel</button>
+          <button
+            onClick={save}
+            disabled={busy || !title.trim()}
+            className="px-5 py-2 rounded-lg text-white font-bold text-sm disabled:opacity-50 inline-flex items-center gap-2"
+            style={{ background: COLORS.goldGradient }}
+          >
+            {busy && <RefreshCcw className="w-4 h-4 animate-spin" />} Save changes
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Create offer modal (manual authoring → backend POST) ────────────────────────
+function CreateOfferModal({
+  properties, onClose, onCreate,
+}: {
+  properties: PropertyOption[];
+  onClose: () => void;
+  onCreate: (body: OfferCreateFields) => Promise<void> | void;
+}) {
+  const now = new Date();
+  const [propertyId, setPropertyId] = useState('');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [offerType, setOfferType] = useState<string>('Package');
+  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [year, setYear] = useState(now.getFullYear());
+  const [discountType, setDiscountType] = useState<string>('');
+  const [discountValue, setDiscountValue] = useState('');
+  const [incremental, setIncremental] = useState('');
+  const [segment, setSegment] = useState('');
+  const [validFrom, setValidFrom] = useState('');
+  const [validTo, setValidTo] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const submit = async () => {
+    if (!propertyId) { setErr('Please choose a property.'); return; }
+    if (!title.trim()) { setErr('Please enter a title.'); return; }
+    if (!description.trim()) { setErr('Please enter a description.'); return; }
+    setErr(null);
+    setSaving(true);
+    try {
+      await onCreate({
+        property_id: propertyId,
+        offer_title: title.trim(),
+        offer_description: description.trim(),
+        offer_type: offerType as OfferCreateFields['offer_type'],
+        target_month: month,
+        target_year: year,
+        discount_type: (discountType || null) as OfferCreateFields['discount_type'],
+        discount_value: numOrNull(discountValue),
+        predicted_incremental_lkr: numOrNull(incremental),
+        target_guest_segment: segment.trim() || null,
+        valid_from: validFrom || null,
+        valid_to: validTo || null,
+        status: 'APPROVED',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in duration-200 max-h-[90vh] flex flex-col">
+        <div className="p-6 border-b border-slate-100 flex items-start justify-between">
+          <div>
+            <p className="text-[11px] uppercase tracking-widest text-slate-400">Manual</p>
+            <h3 className="text-xl font-serif font-bold mt-0.5">Create New Offer</h3>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full"><X className="w-5 h-5 text-slate-500" /></button>
+        </div>
+        <div className="p-6 space-y-4 overflow-y-auto">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={fieldLabel}>Property *</label>
+              <select value={propertyId} onChange={(e) => setPropertyId(e.target.value)} className={fieldInput}>
+                <option value="">Select a property…</option>
+                {properties.map((p) => <option key={p.property_id} value={p.property_id}>{p.property_name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={fieldLabel}>Offer type</label>
+              <select value={offerType} onChange={(e) => setOfferType(e.target.value)} className={fieldInput}>
+                {OFFER_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-600 mb-1">Segment / Audience</label>
-            <input value={segment} onChange={(e) => setSegment(e.target.value)} className="w-full rounded-lg border px-3 py-2" />
+            <label className={fieldLabel}>Title *</label>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Monsoon Wellness Escape" className={fieldInput} />
+          </div>
+          <div>
+            <label className={fieldLabel}>Description *</label>
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Describe the offer for guests." className={cn(fieldInput, 'resize-y')} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-semibold text-slate-600 mb-1">Status</label>
-              <input value={status} onChange={(e) => setStatus(e.target.value)} className="w-full rounded-lg border px-3 py-2" />
+              <label className={fieldLabel}>Target month</label>
+              <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className={fieldInput}>
+                {MONTHS.slice(1).map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+              </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-600 mb-1">Financial (LKR)</label>
-              <input value={financial} onChange={(e) => setFinancial(e.target.value)} className="w-full rounded-lg border px-3 py-2" />
+              <label className={fieldLabel}>Target year</label>
+              <select value={year} onChange={(e) => setYear(Number(e.target.value))} className={fieldInput}>
+                {[now.getFullYear(), now.getFullYear() + 1].map((y) => <option key={y} value={y}>{y}</option>)}
+              </select>
             </div>
           </div>
-
-          <div className="flex items-center justify-end gap-3 mt-2">
-            <button onClick={onClose} className="px-4 py-2 rounded-lg border">Cancel</button>
-            <button
-              onClick={() => {
-                const updated: Row = {
-                  ...row,
-                  title: title.trim() || row.title,
-                  segment: segment.trim() || row.segment,
-                  status: status || row.status,
-                  financialLkr: financial ? Number(financial) : row.financialLkr,
-                  raw: isOffer ? { ...offer, offer_title: title.trim() || offer.offer_title, target_guest_segment: segment.trim() || offer.target_guest_segment, predicted_incremental_lkr: financial ? Number(financial) : offer.predicted_incremental_lkr } as OfferWithProperty : { ...campaign, campaign_name: title.trim() || campaign.campaign_name } as Campaign,
-                };
-                onSave(updated);
-                onClose();
-              }}
-              className="px-4 py-2 rounded-lg text-white font-bold"
-              style={{ background: COLORS.goldGradient }}
-            >
-              Save
-            </button>
+          <div>
+            <label className={fieldLabel}>Target guest segment</label>
+            <input value={segment} onChange={(e) => setSegment(e.target.value)} placeholder="e.g. Repeat luxury guests" className={fieldInput} />
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={fieldLabel}>Discount type</label>
+              <select value={discountType} onChange={(e) => setDiscountType(e.target.value)} className={fieldInput}>
+                <option value="">None</option>
+                {DISCOUNT_TYPES.map((t) => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={fieldLabel}>Discount value</label>
+              <input type="number" value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} className={fieldInput} />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className={fieldLabel}>Incremental (LKR)</label>
+              <input type="number" value={incremental} onChange={(e) => setIncremental(e.target.value)} className={fieldInput} />
+            </div>
+            <div>
+              <label className={fieldLabel}>Valid from</label>
+              <input type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} className={fieldInput} />
+            </div>
+            <div>
+              <label className={fieldLabel}>Valid to</label>
+              <input type="date" value={validTo} onChange={(e) => setValidTo(e.target.value)} className={fieldInput} />
+            </div>
+          </div>
+          {err && <p className="text-sm text-red-600">{err}</p>}
+        </div>
+        <div className="p-4 border-t border-slate-100 flex items-center justify-end gap-3">
+          <button onClick={onClose} className="px-4 py-2 rounded-lg border text-sm">Cancel</button>
+          <button
+            onClick={submit}
+            disabled={saving}
+            className="px-5 py-2 rounded-lg text-white font-bold text-sm disabled:opacity-50 inline-flex items-center gap-2"
+            style={{ background: COLORS.goldGradient }}
+          >
+            {saving ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Create offer
+          </button>
         </div>
       </div>
     </div>
