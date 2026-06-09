@@ -78,7 +78,7 @@ const typeIcon: Record<string, React.ComponentType<{ className?: string }>> = {
 type TabKey = 'all' | 'ai' | 'approved' | 'drafts' | 'scheduled' | 'active' | 'completed';
 
 const TABS: { key: TabKey; label: string }[] = [
-  { key: 'all', label: 'All Campaigns' },
+  { key: 'all', label: 'All Offers' },
   { key: 'ai', label: 'AI Recommendations' },
   { key: 'approved', label: 'Approved Offers' },
   { key: 'drafts', label: 'Drafts' },
@@ -225,7 +225,7 @@ export default function OfferIntelligence() {
         subtitle: `${MONTHS[c.target_month]} ${c.target_year}`,
         segment: tiers.length ? tiers.join(', ') : 'All tiers',
         count: ids.length,
-        offerType: cos[0]?.offer_type ?? 'Campaign',
+        offerType: cos[0]?.offer_type ?? 'Offer',
         status: c.status,
         financialLkr: fin || null,
         roiPct: c.emails_sent > 0 ? (c.emails_opened / c.emails_sent) * 100 : null,
@@ -243,12 +243,19 @@ export default function OfferIntelligence() {
       case 'scheduled':
         return campaigns.filter((c) => c.status === 'AUDIENCE_READY').map(campaignRow);
       case 'active': {
-        const offerRows = offers.filter((o) => o.status === 'ACTIVE').map(offerRow);
-        const campaignRows = campaigns.filter((c) => c.status === 'SENDING').map(campaignRow);
+        // Active now includes records with status = 'ACTIVE' or 'SENT'
+        const offerRows = offers.filter((o) => ['ACTIVE', 'SENT'].includes(o.status as string)).map(offerRow);
+        // Include campaigns that are in sending or already sent (don't include 'ACTIVE' for campaigns)
+        const campaignRows = campaigns.filter((c) => ['SENDING', 'SENT'].includes(c.status)).map(campaignRow);
         return [...offerRows, ...campaignRows];
       }
       case 'completed':
-        return campaigns.filter((c) => c.status === 'SENT').map(campaignRow);
+        // !!! IMPORTANT: `status = 'COMPLETED'` is required from the backend payload/response
+        // Only show rows where the status is explicitly COMPLETED (local UI markers are not persisted)
+        return [
+          ...offers.filter((o) => (o.status as string) === 'COMPLETED').map(offerRow),
+          ...campaigns.filter((c) => (c.status as string) === 'COMPLETED').map(campaignRow),
+        ];
       case 'all':
       default:
         return campaigns.map(campaignRow);
@@ -277,6 +284,7 @@ export default function OfferIntelligence() {
   const onGenerate = async () => {
     setGenerating(true);
     try {
+      const beforeIds = new Set(offers.map((o) => o.offer_id));
       await guestApi.generateOffers({
         month: genMonth,
         year: genYear,
@@ -285,7 +293,19 @@ export default function OfferIntelligence() {
       });
       flash(`Generation queued for ${MONTHS[genMonth]} ${genYear}. Loading new recommendations…`);
       setActiveTab('ai');
-      await load();
+      // Fetch fresh offers and place newly created ones at the top, highlight them.
+      const offersRes = await guestApi.listOffers({ limit: 100 });
+      const fresh = offersRes.data;
+      const newIds = fresh.filter((o) => !beforeIds.has(o.offer_id)).map((o) => o.offer_id);
+      // Reorder: new offers first, then existing
+      const reordered = [
+        ...fresh.filter((o) => newIds.includes(o.offer_id)),
+        ...fresh.filter((o) => !newIds.includes(o.offer_id)),
+      ];
+      setOffers(reordered);
+      const newMap: Record<string, true> = {};
+      newIds.forEach((id) => { newMap[id] = true; });
+      setNewOfferIds(newMap);
     } catch (e) {
       flash(e instanceof Error ? e.message : 'Generation failed', 'err');
     } finally { setGenerating(false); }
@@ -390,6 +410,13 @@ export default function OfferIntelligence() {
     await load();
   });
 
+  const onActivateCampaign = (c: Campaign) => withBusy(c.campaign_id, async () => {
+    // Activation currently builds the audience and marks the campaign ready.
+    await guestApi.buildAudience(c.campaign_id);
+    flash(`Activated “${c.campaign_name}”.`);
+    await load();
+  });
+
   const onGenerateEmails = (c: Campaign) => withBusy(c.campaign_id, async () => {
     await guestApi.generateEmails(c.campaign_id);
     flash(`Email generation queued for “${c.campaign_name}”.`);
@@ -404,6 +431,26 @@ export default function OfferIntelligence() {
       await load();
     });
   };
+
+  // Toggle a row as completed (UI-only). BE: implement endpoint to persist this change.
+  const onToggleCompleted = (r: Row) => {
+    const key = `${r.kind}:${r.id}`;
+    setLocalCompleted((prev) => {
+      const next = { ...prev } as Record<string, true>;
+      if (next[key]) {
+        delete next[key];
+        flash('Unmarked as completed');
+      } else {
+        next[key] = true;
+        flash('Marked as completed');
+      }
+      return next;
+    });
+    setMenuId(null);
+  };
+
+  const [localCompleted, setLocalCompleted] = useState<Record<string, true>>({});
+  const [newOfferIds, setNewOfferIds] = useState<Record<string, true>>({});
 
   // ── render ───────────────────────────────────────────────────────────────────
   const kpis = [
@@ -559,7 +606,7 @@ export default function OfferIntelligence() {
       {/* Campaign Management */}
       <section className="space-y-5">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <h2 className="text-3xl font-serif font-bold">Campaign Management</h2>
+          <h2 className="text-3xl font-serif font-bold">Offer Management</h2>
           <div className="flex flex-wrap gap-1 p-1 rounded-xl bg-slate-100 w-fit">
             {TABS.map((t) => (
               <button
@@ -634,8 +681,8 @@ export default function OfferIntelligence() {
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="bg-slate-50/60 border-b border-slate-100 text-[10px] uppercase tracking-widest text-slate-400">
-                    <th className="p-4 pl-6">Campaign Details</th>
+                    <tr className="bg-slate-50/60 border-b border-slate-100 text-[10px] uppercase tracking-widest text-slate-400">
+                    <th className="p-4 pl-6">Offer Details</th>
                     <th className="p-4">Count</th>
                     <th className="p-4">Offer Type</th>
                     <th className="p-4">Status</th>
@@ -655,8 +702,9 @@ export default function OfferIntelligence() {
                   ) : (
                     visibleRows.map((r) => {
                       const Icon = typeIcon[r.offerType] ?? Package;
+                      const isNewOffer = activeTab === 'ai' && r.kind === 'offer' && !!newOfferIds[r.id];
                       return (
-                        <tr key={r.id} className="hover:bg-slate-50/50">
+                        <tr key={r.id} className="hover:bg-slate-50/50" style={isNewOffer ? { backgroundColor: '#ecfdf5' } : undefined}>
                           <td className="p-4 pl-6">
                             <div className="flex items-center gap-3">
                               <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0" style={{ background: COLORS.goldGradient }}>
@@ -692,7 +740,7 @@ export default function OfferIntelligence() {
                           </td>
                           <td className="p-4 pr-6">
                             <div className="flex items-center justify-end gap-1 relative">
-                              {r.kind === 'offer' && (r.status === 'APPROVED' || r.status === 'ACTIVE') && (
+                              {r.kind === 'offer' && (['ACTIVE', 'SENT'].includes(r.status as string)) && activeTab !== 'approved' && (
                                 <button
                                   onClick={() => onSendOffer(r.raw as OfferWithProperty)}
                                   disabled={busyId === r.id}
@@ -703,6 +751,21 @@ export default function OfferIntelligence() {
                                   <Mail className="w-3.5 h-3.5" /> Send
                                 </button>
                               )}
+                              {r.kind === 'campaign' && (['SENDING', 'SENT'].includes((r.raw as Campaign).status as string)) && activeTab !== 'approved' && (() => {
+                                const cStatus = (r.raw as Campaign).status as string;
+                                const Icon = cStatus === 'SENT' ? Mail : Send;
+                                return (
+                                  <button
+                                    onClick={() => onSend(r.raw as Campaign)}
+                                    disabled={busyId === r.id}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white disabled:opacity-50"
+                                    style={{ background: COLORS.goldGradient }}
+                                    title="Send campaign now"
+                                  >
+                                    <Icon className="w-3.5 h-3.5" /> Send
+                                  </button>
+                                );
+                              })()}
                               <button
                                 onClick={() => setDetail(r)}
                                 className="p-2 rounded-lg hover:bg-slate-100 text-slate-500"
@@ -710,7 +773,21 @@ export default function OfferIntelligence() {
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
-                              {activeTab !== 'active' && (
+                              {(['SENT', 'COMPLETED'].includes((r.raw as any).status as string) && (() => {
+                                const s = (r.raw as any).status as string;
+                                const key = `${r.kind}:${r.id}`;
+                                const isLocallyCompleted = !!localCompleted[key] || s === 'COMPLETED';
+                                return (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); onToggleCompleted(r); }}
+                                    className={cn('p-2 rounded-lg hover:bg-slate-100')}
+                                    title={isLocallyCompleted ? 'Unmark completed' : 'Mark as completed'}
+                                  >
+                                    <CheckCircle className={cn('w-4 h-4', isLocallyCompleted ? 'text-green-700' : 'text-slate-800')} />
+                                  </button>
+                                );
+                              })())}
+                              {activeTab !== 'completed' && r.status !== 'SENT' && (
                                 <>
                                   <button
                                     onClick={(e) => {
@@ -734,12 +811,14 @@ export default function OfferIntelligence() {
                                       onApprove={onApprove}
                                       onReject={openRejectModal}
                                       onActivate={onActivate}
+                                      onActivateCampaign={onActivateCampaign}
                                       onCreateCampaign={onCreateCampaign}
                                       onSendOffer={onSendOffer}
                                       onBuildAudience={onBuildAudience}
                                       onGenerateEmails={onGenerateEmails}
                                       onSend={onSend}
                                       onView={() => { setEditing(r); setMenuId(null); setMenuAnchorRect(null); }}
+                                      showSendActions={activeTab !== 'approved'}
                                     />
                                   )}
                                 </>
@@ -800,8 +879,8 @@ export default function OfferIntelligence() {
 
 // ── Row actions dropdown ───────────────────────────────────────────────────────
 function RowMenu({
-  row, anchorRect, onClose, onApprove, onReject, onActivate, onCreateCampaign,
-  onSendOffer, onBuildAudience, onGenerateEmails, onSend, onView,
+  row, anchorRect, onClose, onApprove, onReject, onActivate, onActivateCampaign, onCreateCampaign,
+  onSendOffer, onBuildAudience, onGenerateEmails, onSend, onView, showSendActions,
 }: {
   row: Row;
   anchorRect: DOMRect | null;
@@ -809,12 +888,14 @@ function RowMenu({
   onApprove: (o: OfferWithProperty) => void;
   onReject: (o: OfferWithProperty) => void;
   onActivate: (o: OfferWithProperty) => void;
+  onActivateCampaign: (c: Campaign) => void;
   onCreateCampaign: (o: OfferWithProperty) => void;
   onSendOffer: (o: OfferWithProperty) => void;
   onBuildAudience: (c: Campaign) => void;
   onGenerateEmails: (c: Campaign) => void;
   onSend: (c: Campaign) => void;
   onView: () => void;
+  showSendActions?: boolean;
 }) {
   const item = 'w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 flex items-center gap-2.5';
   const isOffer = row.kind === 'offer';
@@ -845,7 +926,7 @@ function RowMenu({
             {offer.status === 'APPROVED' && (
               <button className={item} onClick={() => onActivate(offer)}><CheckCircle2 className="w-4 h-4 text-green-600" /> Activate</button>
             )}
-            {(offer.status === 'APPROVED' || offer.status === 'ACTIVE') && (
+            {(['APPROVED', 'ACTIVE', 'SENT'].includes(offer.status as string)) && showSendActions && (
               <>
                 <button className={cn(item, 'text-green-700 font-semibold')} onClick={() => onSendOffer(offer)}><Mail className="w-4 h-4 text-green-600" /> Send to guests</button>
                 <button className={item} onClick={() => onCreateCampaign(offer)}><Send className="w-4 h-4 text-slate-500" /> Create campaign</button>
@@ -854,7 +935,12 @@ function RowMenu({
           </>
         ) : (
           <>
-            <button className={item} onClick={() => onBuildAudience(campaign)}><Users className="w-4 h-4 text-slate-500" /> Build audience</button>
+                                      <button className={item} onClick={() => onBuildAudience(campaign)}><Users className="w-4 h-4 text-slate-500" /> Build audience</button>
+            {campaign.status === 'DRAFT' && (
+              <>
+                <button className={item} onClick={() => onActivateCampaign(campaign)}><CheckCircle2 className="w-4 h-4 text-green-600" /> Activate</button>
+              </>
+            )}
             <button className={cn(item, campaign.total_audience_size === 0 && 'opacity-40 pointer-events-none')} onClick={() => onGenerateEmails(campaign)}><Mail className="w-4 h-4 text-slate-500" /> Generate emails</button>
             <button className={cn(item, campaign.total_audience_size === 0 && 'opacity-40 pointer-events-none')} onClick={() => onSend(campaign)}><Send className="w-4 h-4 text-slate-500" /> Send campaign</button>
           </>
