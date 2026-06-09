@@ -322,7 +322,7 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="p-4 border-t" style={{ borderColor: "#E5E5E5" }}>
+{/*       <div className="p-4 border-t" style={{ borderColor: "#E5E5E5" }}>
         <Link
           href="/settings"
           onClick={closeMobile}
@@ -332,7 +332,7 @@ export function Sidebar() {
           <Settings className="w-5 h-5" />
           <span className="font-medium text-sm">Settings</span>
         </Link>
-      </div>
+      </div> */}
       </div>
     </>
   );
