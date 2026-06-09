@@ -5,9 +5,10 @@
 
 ## 1. What it is (the one-liner)
 A full-stack **hospitality intelligence platform** for Jetwing Symphony PLC (a Sri Lankan
-luxury hotel group). It unifies guest data across properties and layers three kinds of
+luxury hotel group). It unifies guest data across properties and layers four kinds of
 "intelligence" on top: **ML-based guest scoring**, **LLM-generated marketing offers & emails**,
-and **real-time analytics dashboards** — all behind role-based access control.
+**real-time analytics dashboards**, and an **ESG / sustainability reporting suite** — all behind
+role-based access control.
 
 It's not a CRUD app — the interesting part is the **AI/ML integration** and a clean
 **multi-tier architecture**.
@@ -60,6 +61,7 @@ boundary where auth, validation, and secrets live.
 | **Validation** | Zod | Runtime schema validation on API inputs (type-safe boundaries). |
 | **LLM** | Google Gemini (`gemini-2.5-flash`) via Edge Functions | Generates offers & personalized emails (originally Claude — ported). |
 | **ML model** | Hugging Face Gradio Space | Customer-ranking model (0-100 score) served as an API. |
+| **Email** | Nodemailer + Gmail SMTP | Sends offer/campaign emails from the API routes (Node runtime). Safe dry-run unless SMTP is configured. |
 | **Background jobs** | Python, Celery, Redis | Nightly ETL + batch scoring outside the request cycle. |
 | **PDF export** | jsPDF + html2canvas | "Export Report" on the sustainability dashboard. |
 
@@ -123,8 +125,16 @@ This is a strong portfolio talking point because it's "defense in depth":
   **5 years of historical revenue** for the target month, builds a structured prompt with a
   **strategic directive** (the user's business goal), and asks Gemini to return a JSON array of
   2-3 grounded seasonal offers. A **validate + one-retry** loop guarantees clean JSON.
-- Offers go into a **review workflow** (PENDING_REVIEW -> APPROVED -> ACTIVE), then can become
-  **campaigns** with AI-personalized emails.
+- Offers go into a **review workflow** (PENDING_REVIEW -> APPROVED -> ACTIVE), surfaced in the
+  Offer Intelligence UI as tabs (**AI Recommendations**, **Approved Offers**, plus campaign
+  states). Approved/active offers can be **sent to guests in one click** — or turned into a
+  **campaign** with AI-personalized emails.
+- **Two send paths, one pipeline:** (1) hand-pick guests in **Filtering & Intelligence** and
+  *Send Offer*, or (2) *Send to guests* on an **Approved Offer** (sends to every guest with an
+  email on file). Both reuse `POST /api/v1/offers/:id/send-to-guests`, which spins up a tracked
+  campaign, writes a **personalized HTML+text email per guest** (branded, with a
+  **call-to-action link to jetwinghotels.com**), and dispatches via Gmail SMTP. It reports
+  `sent / failed / skipped (no email)` and surfaces the real SMTP error on failure.
 - *Talking point:* the LLM client sits behind a shared interface, so swapping providers
   (we migrated **Claude -> Gemini**) only touched one file — the prompt-building and validation
   logic is provider-agnostic.
@@ -142,7 +152,50 @@ This is a strong portfolio talking point because it's "defense in depth":
 
 ---
 
-## 7. Background processing (Python worker)
+## 7. Sustainability Dashboard — ESG reporting & AI insights
+
+A full **ESG (Environmental, Social, Governance) reporting module** for the hotel group, served
+at `/sustainability`. It's a distinct domain from Guest Intelligence but rides the *same*
+architecture (browser client -> Next.js API -> Supabase), which is itself a good talking point:
+the trust boundary and data-access patterns are reused, not reinvented.
+
+**Six views**, switched from the sidebar without a full page reload — the sidebar dispatches a
+`sustainabilityViewChange` browser event that the page listens for and swaps the rendered view:
+- **Dashboard Overview** — headline ESG KPIs + AI-generated insights.
+- **Climate Action** — carbon emissions & intensity, with cross-hotel comparison.
+- **Energy Management** — consumption, renewable share, peak load.
+- **Water Management** — usage & efficiency.
+- **Waste Management** — generation, landfill diversion, recycling.
+- **Community Impact** — social programmes & community spend.
+*(Biodiversity, ESG Reports, Risk and Goals views exist in code but are currently disabled.)*
+
+**Two global filters drive every view** (a sticky top bar):
+- **Property** selector — All Properties or a single hotel.
+- **Date-range** picker (From / To). Changing either re-fetches and **re-aggregates server-side**,
+  so every chart and KPI reflects the chosen property + period.
+
+**Data flow:** typed helpers in `lib/sustainability/api.ts` call REST routes under
+`/api/sustainability/*` (`properties`, `environment`, `waste-summary`, `community-programs`,
+`dashboard`, `kpis`, `esg-pillars`, `hotel-performance`, `insights`, `news`). These run on the
+server with the **admin (service-role) client** and read **pre-aggregated monthly Postgres views**
+(e.g. `sustainability_environment_dashboard_monthly`) filtered by property and period.
+
+**The AI + live-data twist (strong talking point):**
+- **`/api/sustainability/news`** pulls recent **Sri Lanka sustainability news** from an external
+  **NewsAPI** feed, with URL validation + reachability checks so dead links are dropped.
+- **`/api/sustainability/insights`** sends the current dashboard **metrics + those news articles**
+  to a **Supabase Edge Function (`generate-sustainability-insights`, Gemini)**, which returns
+  tailored ESG recommendations. If the LLM is unavailable or returns nothing, a **deterministic
+  rule-based fallback** generates insights from the same metrics — so the panel **never breaks**.
+  (Same resilience philosophy as the offer generator: AI-first, graceful-degradation second.)
+
+**Export:** every view has an **"Export Report" -> PDF** button (client-side `html2canvas` +
+`jsPDF`) that captures the current property/date selection into a titled, paginated A4 layout —
+useful for board/ESG reporting.
+
+---
+
+## 8. Background processing (Python worker)
 Not everything fits in a web request. A separate **Python service** uses **Celery + Redis** to run:
 - **Nightly PMS ETL** — pull bookings from the Property Management System into the DB.
 - **Feature refresh** — recompute the 18-feature `customer_features` via a DB function.
@@ -154,7 +207,7 @@ belongs in a queue, not the request path.
 
 ---
 
-## 8. Data model (the domains)
+## 9. Data model (the domains)
 ~15 tables across four domains:
 - **Core:** `properties`, `customers`, `bookings`
 - **Intelligence:** `customer_features`, `customer_scores`, `scoring_runs`
@@ -168,38 +221,48 @@ Schema is managed as **versioned SQL migrations** — migration `010` extends `b
 
 ---
 
-## 9. Engineering decisions worth highlighting (great for Q&A)
+## 10. Engineering decisions worth highlighting (great for Q&A)
 - **Single trust boundary:** browser -> API -> {DB, AI}. Secrets (service-role key, Gemini key)
   live only on the server / as Supabase secrets, never in the client bundle.
 - **Provider-agnostic AI layer:** migrated the LLM from Claude to Gemini by changing one shared
   module; the prompt logic didn't move.
-- **Safe-by-default email sending:** campaign sends run as a **dry run** (marked sent, no real
-  email) unless a SendGrid key is configured *and* the caller confirms — prevents accidentally
-  emailing real addresses from a demo.
+- **Safe-by-default email sending:** sends run as a **dry run** (marked sent, no real email)
+  unless **SMTP is configured** (`SMTP_USER`/`SMTP_PASS` — a Gmail app password) *and* the
+  caller confirms — prevents accidentally emailing real addresses from a demo. An optional
+  `EMAIL_OVERRIDE_TO` funnels every message to one inbox for testing. Nodemailer is a Node-only
+  dependency, so the send routes pin `runtime = 'nodejs'` and it's excluded from the bundler via
+  `serverExternalPackages`.
 - **Resilience:** the scoring proxy isolates a bad/slow record instead of failing the whole
-  batch; the LLM has a JSON-repair retry; aggregations handle incomplete data.
+  batch; the LLM has a JSON-repair retry; aggregations handle incomplete data; the sustainability
+  insights panel falls back to deterministic rule-based recommendations if Gemini is unavailable.
 - **Type safety end to end:** Zod validates API inputs; generated TypeScript types mirror the DB
   schema; shared response types are imported by both the API and the UI.
 
 ---
 
-## 10. Suggested demo flow (so the story lands)
+## 11. Suggested demo flow (so the story lands)
 1. **Log in** -> land on the **Executive Dashboard** (real KPIs from the DB).
 2. **Guest Intelligence -> Filtering** -> show real guests, multi-select filters, **date range**,
    and the **ML Score column**.
 3. **Select guests -> Send Offer** -> connect the filter to the marketing pipeline.
 4. **Offer Recommendations -> Generate** -> live **Gemini** generation of seasonal offers from a
-   business goal.
-5. **Guest Analytics** -> flip the **date range** and watch every chart re-aggregate.
-6. **Sustainability** -> ESG dashboards + **PDF export**.
+   business goal -> **Approve** -> the offer appears under the **Approved Offers** tab.
+5. **Approved Offers -> Send** -> one-click email of the offer to guests (branded email with a
+   link to jetwinghotels.com), with live `sent / failed / skipped` feedback.
+6. **Guest Analytics** -> flip the **date range** and watch every chart re-aggregate.
+7. **Sustainability** -> ESG dashboards + **PDF export**.
+8. **Resize to a phone** -> the sidebar collapses into a slide-in drawer (hamburger toggle),
+   showing the UI is fully responsive.
 
 ---
 
 ## Honest framing for Q&A
 If asked "is this production-ready?": it's a **portfolio-grade build on real architecture** —
-real DB with RLS, real ML inference, real LLM generation — running on **demo/seed data**, with
-email sending in safe dry-run mode and the model on a free-tier HF Space. The architecture is
-production-shaped; the data and external integrations are demo-configured.
+real DB with RLS, real ML inference, real LLM generation, and **real email delivery via Gmail
+SMTP** — running on **demo/seed data**. Email defaults to a safe dry-run and only sends for real
+once SMTP credentials are configured and the caller confirms; the ML model is on a free-tier HF
+Space. The architecture is production-shaped; the data and external integrations are
+demo-configured.
 
 ---
 
@@ -208,5 +271,7 @@ production-shaped; the data and external integrations are demo-configured.
 - **Backend/API:** Next.js Route Handlers, Zod, Supabase JS client
 - **Database/Auth:** Supabase (PostgreSQL, Row-Level Security, Auth, Edge Functions)
 - **AI/ML:** Google Gemini (Edge Functions, Deno) + Hugging Face Gradio Space (Python ML)
+- **Sustainability:** Gemini insights (Edge Function) + NewsAPI live feed, monthly ESG Postgres views
+- **Email:** Nodemailer + Gmail SMTP (Node runtime, safe dry-run by default)
 - **Background:** Python, Celery, Redis, gradio_client
 - **Other:** jsPDF + html2canvas (PDF export), server-only (server/client boundary)

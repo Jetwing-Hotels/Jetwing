@@ -318,25 +318,27 @@ export default function OfferIntelligence() {
     await load();
   });
 
-  // Send an approved/active offer straight to guests (every guest with an email
-  // on file). Reuses the send-to-guests pipeline: it spins up a tracked campaign,
-  // writes a personalised email per guest and dispatches via SMTP.
+  // Send an approved/active offer straight to guests. Each guest is reached by email
+  // if they have one, otherwise by SMS if a phone is on file (e.g. OTA bookings).
+  // Reuses the send-to-guests pipeline: it spins up a tracked campaign, writes a
+  // personalised message per guest and dispatches via SMTP / Twilio.
   const onSendOffer = async (o: OfferWithProperty) => {
     setMenuId(null);
     let recipients: { id: string }[];
     try {
       const res = await guestApi.listCustomers({ limit: 500 });
-      recipients = res.data.filter((c) => c.email && c.email.trim());
+      // Include guests with an email OR a phone — the API picks the channel per guest.
+      recipients = res.data.filter((c) => (c.email && c.email.trim()) || (c.phone && c.phone.trim()));
     } catch (e) {
       flash(e instanceof Error ? e.message : 'Failed to load guests', 'err');
       return;
     }
     if (recipients.length === 0) {
-      flash('No guests with an email address to send to.', 'err');
+      flash('No guests with an email address or phone number to send to.', 'err');
       return;
     }
     if (!window.confirm(
-      `Email “${o.offer_title}” to ${recipients.length} guest(s) with an email on file?\n\nReal emails are sent when SMTP is configured (otherwise this is a safe dry run).`,
+      `Send “${o.offer_title}” to ${recipients.length} guest(s)?\n\nGuests with an email get an email; those without (e.g. OTA bookings) get an SMS with a link to the website. Real sends happen when SMTP / Twilio are configured (otherwise this is a safe dry run).`,
     )) return;
     await withBusy(o.offer_id, async () => {
       const r = await guestApi.sendOfferToGuests(o.offer_id, {
