@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import ReactDOM from 'react-dom';
 import {
   Sparkles,
   Target,
@@ -10,6 +11,7 @@ import {
   CheckCircle2,
   DollarSign,
   Eye,
+  Edit,
   MoreVertical,
   Search,
   Calendar,
@@ -137,6 +139,8 @@ export default function OfferIntelligence() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [menuId, setMenuId] = useState<string | null>(null);
   const [detail, setDetail] = useState<Row | null>(null);
+  const [editing, setEditing] = useState<Row | null>(null);
+  const [menuAnchorRect, setMenuAnchorRect] = useState<DOMRect | null>(null);
 
   const flash = (msg: string, kind: 'ok' | 'err' = 'ok') => {
     setToast({ msg, kind });
@@ -172,7 +176,7 @@ export default function OfferIntelligence() {
   // ── KPIs (real where the data exists) ──────────────────────────────────────
   const pending = useMemo(() => offers.filter((o) => o.status === 'PENDING_REVIEW'), [offers]);
   const approved = useMemo(
-    () => offers.filter((o) => o.status === 'APPROVED' || o.status === 'ACTIVE'),
+    () => offers.filter((o) => o.status === 'APPROVED'),
     [offers],
   );
   const totalRevenue = useMemo(
@@ -238,8 +242,11 @@ export default function OfferIntelligence() {
         return campaigns.filter((c) => c.status === 'DRAFT').map(campaignRow);
       case 'scheduled':
         return campaigns.filter((c) => c.status === 'AUDIENCE_READY').map(campaignRow);
-      case 'active':
-        return campaigns.filter((c) => c.status === 'SENDING').map(campaignRow);
+      case 'active': {
+        const offerRows = offers.filter((o) => o.status === 'ACTIVE').map(offerRow);
+        const campaignRows = campaigns.filter((c) => c.status === 'SENDING').map(campaignRow);
+        return [...offerRows, ...campaignRows];
+      }
       case 'completed':
         return campaigns.filter((c) => c.status === 'SENT').map(campaignRow);
       case 'all':
@@ -291,6 +298,7 @@ export default function OfferIntelligence() {
   });
 
   const onReject = (o: OfferWithProperty) => {
+    // kept for backwards compatibility; prefer using modal
     const reason = window.prompt('Reason for rejecting this offer?');
     if (!reason) return;
     return withBusy(o.offer_id, async () => {
@@ -298,6 +306,31 @@ export default function OfferIntelligence() {
       flash(`Rejected “${o.offer_title}”.`);
       await load();
     });
+  };
+
+  // New: reject modal state and opener
+  const [rejectTarget, setRejectTarget] = useState<OfferWithProperty | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+
+  const openRejectModal = (o: OfferWithProperty) => {
+    setRejectTarget(o);
+    setRejectReason('');
+  };
+
+  const confirmRejectFromModal = async () => {
+    if (!rejectTarget) return;
+    const o = rejectTarget;
+    if (!rejectReason.trim()) {
+      flash('Please provide a reason to reject.', 'err');
+      return;
+    }
+    await withBusy(o.offer_id, async () => {
+      await guestApi.rejectOffer(o.offer_id, rejectReason.trim());
+      flash(`Rejected “${o.offer_title}”.`);
+      await load();
+    });
+    setRejectTarget(null);
+    setRejectReason('');
   };
 
   const onActivate = (o: OfferWithProperty) => withBusy(o.offer_id, async () => {
@@ -677,28 +710,39 @@ export default function OfferIntelligence() {
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
-                              <button
-                                onClick={() => setMenuId(menuId === r.id ? null : r.id)}
-                                disabled={busyId === r.id}
-                                className="p-2 rounded-lg hover:bg-slate-100 text-slate-500"
-                                title="Actions"
-                              >
-                                {busyId === r.id ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <MoreVertical className="w-4 h-4" />}
-                              </button>
-                              {menuId === r.id && (
-                                <RowMenu
-                                  row={r}
-                                  onClose={() => setMenuId(null)}
-                                  onApprove={onApprove}
-                                  onReject={onReject}
-                                  onActivate={onActivate}
-                                  onCreateCampaign={onCreateCampaign}
-                                  onSendOffer={onSendOffer}
-                                  onBuildAudience={onBuildAudience}
-                                  onGenerateEmails={onGenerateEmails}
-                                  onSend={onSend}
-                                  onView={() => { setDetail(r); setMenuId(null); }}
-                                />
+                              {activeTab !== 'active' && (
+                                <>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const newId = menuId === r.id ? null : r.id;
+                                      setMenuId(newId);
+                                      const el = e.currentTarget as HTMLElement;
+                                      setMenuAnchorRect(el.getBoundingClientRect());
+                                    }}
+                                    disabled={busyId === r.id}
+                                    className="p-2 rounded-lg hover:bg-slate-100 text-slate-500"
+                                    title="Actions"
+                                  >
+                                    {busyId === r.id ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <MoreVertical className="w-4 h-4" />}
+                                  </button>
+                                  {menuId === r.id && (
+                                    <RowMenu
+                                      row={r}
+                                      anchorRect={menuAnchorRect}
+                                      onClose={() => { setMenuId(null); setMenuAnchorRect(null); }}
+                                      onApprove={onApprove}
+                                      onReject={openRejectModal}
+                                      onActivate={onActivate}
+                                      onCreateCampaign={onCreateCampaign}
+                                      onSendOffer={onSendOffer}
+                                      onBuildAudience={onBuildAudience}
+                                      onGenerateEmails={onGenerateEmails}
+                                      onSend={onSend}
+                                      onView={() => { setEditing(r); setMenuId(null); setMenuAnchorRect(null); }}
+                                    />
+                                  )}
+                                </>
                               )}
                             </div>
                           </td>
@@ -714,16 +758,53 @@ export default function OfferIntelligence() {
       </section>
 
       {detail && <DetailModal row={detail} onClose={() => setDetail(null)} />}
+      {editing && (
+        <EditModal
+          row={editing}
+          onClose={() => setEditing(null)}
+          onSave={(updated) => {
+            if (updated.kind === 'offer') {
+              const u = updated.raw as OfferWithProperty;
+              setOffers((prev) => prev.map((o) => (o.offer_id === u.offer_id ? { ...o, offer_title: u.offer_title, target_guest_segment: (u.target_guest_segment ?? o.target_guest_segment), predicted_incremental_lkr: u.predicted_incremental_lkr } : o)));
+            } else {
+              const u = updated.raw as Campaign;
+              setCampaigns((prev) => prev.map((c) => (c.campaign_id === u.campaign_id ? { ...c, campaign_name: u.campaign_name, target_tiers: u.target_tiers ?? c.target_tiers, status: u.status ?? c.status } : c)));
+            }
+            flash('Saved changes');
+            setEditing(null);
+          }}
+        />
+      )}
+      {rejectTarget && (
+        <div className="fixed inset-0 z-[75] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setRejectTarget(null)} />
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div className="p-4 border-b border-slate-100">
+              <h3 className="text-lg font-semibold">Reject Offer</h3>
+              <p className="text-sm text-slate-500 mt-1">Provide a reason for rejecting this offer.</p>
+            </div>
+            <div className="p-4">
+              <p className="text-sm font-medium mb-2">{rejectTarget.offer_title}</p>
+              <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} rows={4} className="w-full rounded-lg border px-3 py-2 text-sm" />
+            </div>
+            <div className="p-4 flex justify-end gap-2 border-t border-slate-100">
+              <button onClick={() => setRejectTarget(null)} className="px-4 py-2 rounded-lg border">Cancel</button>
+              <button onClick={confirmRejectFromModal} className="px-4 py-2 rounded-lg text-white font-bold" style={{ background: COLORS.goldGradient }}>Reject</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // ── Row actions dropdown ───────────────────────────────────────────────────────
 function RowMenu({
-  row, onClose, onApprove, onReject, onActivate, onCreateCampaign,
+  row, anchorRect, onClose, onApprove, onReject, onActivate, onCreateCampaign,
   onSendOffer, onBuildAudience, onGenerateEmails, onSend, onView,
 }: {
   row: Row;
+  anchorRect: DOMRect | null;
   onClose: () => void;
   onApprove: (o: OfferWithProperty) => void;
   onReject: (o: OfferWithProperty) => void;
@@ -740,11 +821,18 @@ function RowMenu({
   const offer = row.raw as OfferWithProperty;
   const campaign = row.raw as Campaign;
 
-  return (
+  const menuWidth = 208;
+  const top = anchorRect ? Math.round(anchorRect.bottom + window.scrollY + 6) : undefined;
+  const left = anchorRect ? Math.max(8, Math.round(anchorRect.right + window.scrollX - menuWidth)) : undefined;
+
+  const menu = (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="absolute right-0 top-11 z-50 w-52 rounded-xl border border-slate-100 bg-white shadow-xl py-1.5 overflow-hidden">
-        <button className={item} onClick={onView}><Eye className="w-4 h-4 text-slate-400" /> View details</button>
+      <div
+        style={anchorRect ? { position: 'fixed', top, left, width: menuWidth } : undefined}
+        className="z-50 rounded-xl border border-slate-100 bg-white shadow-xl py-1.5 overflow-hidden"
+      >
+        <button className={item} onClick={onView}><Edit className="w-4 h-4 text-slate-400" /> Edit details</button>
         <div className="my-1 border-t border-slate-50" />
         {isOffer ? (
           <>
@@ -774,6 +862,11 @@ function RowMenu({
       </div>
     </>
   );
+
+  if (typeof document !== 'undefined') {
+    return ReactDOM.createPortal(menu, document.body);
+  }
+  return menu;
 }
 
 // ── Detail modal ───────────────────────────────────────────────────────────────
@@ -819,6 +912,75 @@ function DetailModal({ row, onClose }: { row: Row; onClose: () => void }) {
               <Stat label="Opened" value={String(campaign.emails_opened)} accent />
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Edit modal (in-place edits update local state optimistically) ─────────
+function EditModal({ row, onClose, onSave }: { row: Row; onClose: () => void; onSave: (r: Row) => void }) {
+  const isOffer = row.kind === 'offer';
+  const offer = row.raw as OfferWithProperty;
+  const campaign = row.raw as Campaign;
+
+  const [title, setTitle] = useState(row.title);
+  const [segment, setSegment] = useState(row.segment);
+  const [status, setStatus] = useState(row.status);
+  const [financial, setFinancial] = useState<string>(row.financialLkr != null ? String(row.financialLkr) : '');
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in duration-200">
+        <div className="p-6 border-b border-slate-100 flex items-start justify-between">
+          <div>
+            <p className="text-[11px] uppercase tracking-widest text-slate-400">{row.subtitle}</p>
+            <h3 className="text-xl font-serif font-bold mt-0.5">Edit {isOffer ? 'Offer' : 'Campaign'}</h3>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full"><X className="w-5 h-5 text-slate-500" /></button>
+        </div>
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-slate-600 mb-1">Title</label>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-lg border px-3 py-2" />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-600 mb-1">Segment / Audience</label>
+            <input value={segment} onChange={(e) => setSegment(e.target.value)} className="w-full rounded-lg border px-3 py-2" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-semibold text-slate-600 mb-1">Status</label>
+              <input value={status} onChange={(e) => setStatus(e.target.value)} className="w-full rounded-lg border px-3 py-2" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-600 mb-1">Financial (LKR)</label>
+              <input value={financial} onChange={(e) => setFinancial(e.target.value)} className="w-full rounded-lg border px-3 py-2" />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 mt-2">
+            <button onClick={onClose} className="px-4 py-2 rounded-lg border">Cancel</button>
+            <button
+              onClick={() => {
+                const updated: Row = {
+                  ...row,
+                  title: title.trim() || row.title,
+                  segment: segment.trim() || row.segment,
+                  status: status || row.status,
+                  financialLkr: financial ? Number(financial) : row.financialLkr,
+                  raw: isOffer ? { ...offer, offer_title: title.trim() || offer.offer_title, target_guest_segment: segment.trim() || offer.target_guest_segment, predicted_incremental_lkr: financial ? Number(financial) : offer.predicted_incremental_lkr } as OfferWithProperty : { ...campaign, campaign_name: title.trim() || campaign.campaign_name } as Campaign,
+                };
+                onSave(updated);
+                onClose();
+              }}
+              className="px-4 py-2 rounded-lg text-white font-bold"
+              style={{ background: COLORS.goldGradient }}
+            >
+              Save
+            </button>
+          </div>
         </div>
       </div>
     </div>
