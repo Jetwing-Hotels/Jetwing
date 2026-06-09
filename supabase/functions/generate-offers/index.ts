@@ -10,6 +10,7 @@
 //   Optional: "run_id" (attach to an existing run), "triggered_by_user"
 // ============================================================================
 
+import '../_shared/deno-globals.ts';
 import { corsHeaders, json } from '../_shared/cors.ts';
 import { makeAdmin, checkSecret } from '../_shared/supabaseAdmin.ts';
 import { makeClient, generateJson, estimateCostUsd } from '../_shared/gemini.ts';

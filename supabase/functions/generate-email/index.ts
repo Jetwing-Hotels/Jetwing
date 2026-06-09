@@ -9,6 +9,7 @@
 //   POST { "campaign_id": "…", "limit": 25 }          → up to N pending recipients
 // ============================================================================
 
+import '../_shared/deno-globals.ts';
 import { corsHeaders, json } from '../_shared/cors.ts';
 import { makeAdmin, checkSecret } from '../_shared/supabaseAdmin.ts';
 import { makeClient, generateJson } from '../_shared/gemini.ts';

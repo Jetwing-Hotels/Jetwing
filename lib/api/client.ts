@@ -31,6 +31,42 @@ export type OfferWithProperty = SeasonalOffer & {
   properties?: { property_code: string; property_name: string; brand_tier: string; location_city?: string } | null;
 };
 
+// Fields the in-app editor may change on an existing offer.
+export interface OfferEditableFields {
+  offer_title: string;
+  offer_description: string;
+  offer_type: 'Accommodation' | 'Package' | 'Experience' | 'F&B' | 'Wellness';
+  discount_type: 'Percentage' | 'Complimentary' | 'Value_Add' | 'Rate_Plan' | null;
+  discount_value: number | null;
+  predicted_occupancy_uplift_pct: number | null;
+  predicted_revenue_uplift_pct: number | null;
+  predicted_incremental_lkr: number | null;
+  target_guest_segment: string | null;
+  sustainability_angle: string | null;
+  target_month: number;
+  target_year: number;
+  valid_from: string | null;
+  valid_to: string | null;
+  status: 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'EXPIRED';
+}
+
+// Fields required/allowed when creating an offer manually.
+export type OfferCreateFields = Pick<
+  OfferEditableFields,
+  'offer_title' | 'offer_description' | 'offer_type' | 'target_month' | 'target_year'
+> &
+  Partial<Omit<OfferEditableFields, 'offer_title' | 'offer_description' | 'offer_type' | 'target_month' | 'target_year' | 'status'>> & {
+    property_id: string;
+    status?: 'PENDING_REVIEW' | 'APPROVED' | 'ACTIVE';
+  };
+
+export interface PropertyOption {
+  property_id: string;
+  property_code: string;
+  property_name: string;
+  location_city?: string;
+}
+
 interface Paginated<T> { data: T[]; pagination: { limit: number; offset: number; total: number } }
 
 export const guestApi = {
@@ -41,6 +77,12 @@ export const guestApi = {
     return api<Paginated<OfferWithProperty>>(`/offers?${qs.toString()}`);
   },
   getOffer: (id: string) => api<{ data: OfferWithProperty }>(`/offers/${id}`),
+  // Edit an offer's fields (in-app editor). Only the supplied keys change.
+  updateOffer: (id: string, body: Partial<OfferEditableFields>) =>
+    api<{ data: OfferWithProperty }>(`/offers/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  // Create a manually authored offer (not AI-generated).
+  createOffer: (body: OfferCreateFields) =>
+    api<{ data: OfferWithProperty }>(`/offers`, { method: 'POST', body: JSON.stringify(body) }),
   approveOffer: (id: string) => api<{ data: SeasonalOffer }>(`/offers/${id}/approve`, { method: 'PATCH' }),
   rejectOffer: (id: string, reason: string) =>
     api<{ data: SeasonalOffer }>(`/offers/${id}/reject`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
@@ -83,6 +125,14 @@ export const guestApi = {
       method: 'POST',
       body: JSON.stringify(limit ? { limit } : {}),
     }),
+
+  // ── Properties (for the manual offer form) ───────────────────────────────────
+  listProperties: async (): Promise<{ data: PropertyOption[] }> => {
+    const res = await fetch('/api/sustainability/properties');
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new ApiClientError(res.status, body?.error ?? res.statusText);
+    return { data: (body?.data ?? []) as PropertyOption[] };
+  },
 
   // ── Customers (guest list) ───────────────────────────────────────────────────
   listCustomers: (params: { limit?: number; offset?: number } = {}) => {
