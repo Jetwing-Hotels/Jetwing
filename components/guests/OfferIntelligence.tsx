@@ -243,12 +243,19 @@ export default function OfferIntelligence() {
       case 'scheduled':
         return campaigns.filter((c) => c.status === 'AUDIENCE_READY').map(campaignRow);
       case 'active': {
-        const offerRows = offers.filter((o) => o.status === 'ACTIVE').map(offerRow);
-        const campaignRows = campaigns.filter((c) => c.status === 'SENDING').map(campaignRow);
+        // Active now includes records with status = 'ACTIVE' or 'SENT'
+        const offerRows = offers.filter((o) => ['ACTIVE', 'SENT'].includes(o.status as string)).map(offerRow);
+        // Include campaigns that are in sending or already sent (don't include 'ACTIVE' for campaigns)
+        const campaignRows = campaigns.filter((c) => ['SENDING', 'SENT'].includes(c.status)).map(campaignRow);
         return [...offerRows, ...campaignRows];
       }
       case 'completed':
-        return campaigns.filter((c) => c.status === 'SENT').map(campaignRow);
+        // !!! IMPORTANT: `status = 'COMPLETED'` is required from the backend payload/response
+        // Only show rows where the status is explicitly COMPLETED (local UI markers are not persisted)
+        return [
+          ...offers.filter((o) => (o.status as string) === 'COMPLETED').map(offerRow),
+          ...campaigns.filter((c) => (c.status as string) === 'COMPLETED').map(campaignRow),
+        ];
       case 'all':
       default:
         return campaigns.map(campaignRow);
@@ -404,6 +411,25 @@ export default function OfferIntelligence() {
       await load();
     });
   };
+
+  // Toggle a row as completed (UI-only). BE: implement endpoint to persist this change.
+  const onToggleCompleted = (r: Row) => {
+    const key = `${r.kind}:${r.id}`;
+    setLocalCompleted((prev) => {
+      const next = { ...prev } as Record<string, true>;
+      if (next[key]) {
+        delete next[key];
+        flash('Unmarked as completed');
+      } else {
+        next[key] = true;
+        flash('Marked as completed');
+      }
+      return next;
+    });
+    setMenuId(null);
+  };
+
+  const [localCompleted, setLocalCompleted] = useState<Record<string, true>>({});
 
   // ── render ───────────────────────────────────────────────────────────────────
   const kpis = [
@@ -692,7 +718,7 @@ export default function OfferIntelligence() {
                           </td>
                           <td className="p-4 pr-6">
                             <div className="flex items-center justify-end gap-1 relative">
-                              {r.kind === 'offer' && (r.status === 'APPROVED' || r.status === 'ACTIVE') && (
+                              {r.kind === 'offer' && (['ACTIVE', 'SENT'].includes(r.status as string)) && activeTab !== 'approved' && (
                                 <button
                                   onClick={() => onSendOffer(r.raw as OfferWithProperty)}
                                   disabled={busyId === r.id}
@@ -703,6 +729,17 @@ export default function OfferIntelligence() {
                                   <Mail className="w-3.5 h-3.5" /> Send
                                 </button>
                               )}
+                              {r.kind === 'campaign' && (['SENDING', 'SENT'].includes((r.raw as Campaign).status as string)) && activeTab !== 'approved' && (
+                                <button
+                                  onClick={() => onSend(r.raw as Campaign)}
+                                  disabled={busyId === r.id}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white disabled:opacity-50"
+                                  style={{ background: COLORS.goldGradient }}
+                                  title="Send campaign now"
+                                >
+                                  <Send className="w-3.5 h-3.5" /> Send
+                                </button>
+                              )}
                               <button
                                 onClick={() => setDetail(r)}
                                 className="p-2 rounded-lg hover:bg-slate-100 text-slate-500"
@@ -710,7 +747,21 @@ export default function OfferIntelligence() {
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
-                              {activeTab !== 'active' && (
+                              {(['SENT', 'COMPLETED'].includes((r.raw as any).status as string) && (() => {
+                                const s = (r.raw as any).status as string;
+                                const key = `${r.kind}:${r.id}`;
+                                const isLocallyCompleted = !!localCompleted[key] || s === 'COMPLETED';
+                                return (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); onToggleCompleted(r); }}
+                                    className={cn('p-2 rounded-lg hover:bg-slate-100')}
+                                    title={isLocallyCompleted ? 'Unmark completed' : 'Mark as completed'}
+                                  >
+                                    <CheckCircle className={cn('w-4 h-4', isLocallyCompleted ? 'text-green-700' : 'text-slate-800')} />
+                                  </button>
+                                );
+                              })())}
+                              {activeTab !== 'active' && activeTab !== 'completed' && (
                                 <>
                                   <button
                                     onClick={(e) => {
@@ -740,6 +791,7 @@ export default function OfferIntelligence() {
                                       onGenerateEmails={onGenerateEmails}
                                       onSend={onSend}
                                       onView={() => { setEditing(r); setMenuId(null); setMenuAnchorRect(null); }}
+                                      showSendActions={activeTab !== 'approved'}
                                     />
                                   )}
                                 </>
@@ -801,7 +853,7 @@ export default function OfferIntelligence() {
 // ── Row actions dropdown ───────────────────────────────────────────────────────
 function RowMenu({
   row, anchorRect, onClose, onApprove, onReject, onActivate, onCreateCampaign,
-  onSendOffer, onBuildAudience, onGenerateEmails, onSend, onView,
+  onSendOffer, onBuildAudience, onGenerateEmails, onSend, onView, showSendActions,
 }: {
   row: Row;
   anchorRect: DOMRect | null;
@@ -815,6 +867,7 @@ function RowMenu({
   onGenerateEmails: (c: Campaign) => void;
   onSend: (c: Campaign) => void;
   onView: () => void;
+  showSendActions?: boolean;
 }) {
   const item = 'w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 flex items-center gap-2.5';
   const isOffer = row.kind === 'offer';
@@ -845,7 +898,7 @@ function RowMenu({
             {offer.status === 'APPROVED' && (
               <button className={item} onClick={() => onActivate(offer)}><CheckCircle2 className="w-4 h-4 text-green-600" /> Activate</button>
             )}
-            {(offer.status === 'APPROVED' || offer.status === 'ACTIVE') && (
+            {(['APPROVED', 'ACTIVE', 'SENT'].includes(offer.status as string)) && showSendActions && (
               <>
                 <button className={cn(item, 'text-green-700 font-semibold')} onClick={() => onSendOffer(offer)}><Mail className="w-4 h-4 text-green-600" /> Send to guests</button>
                 <button className={item} onClick={() => onCreateCampaign(offer)}><Send className="w-4 h-4 text-slate-500" /> Create campaign</button>
