@@ -1,0 +1,46 @@
+{
+  "model_version": "2.0",
+  "feature_columns": [
+    "recency_days",
+    "frequency_total",
+    "monetary_total",
+    "monetary_avg_per_stay",
+    "avg_length_of_stay",
+    "avg_lead_time_days",
+    "cancellation_ratio",
+    "direct_booking_ratio",
+    "is_repeated_guest",
+    "prev_completed_bookings",
+    "avg_special_requests",
+    "luxury_reserve_visits",
+    "premium_hotel_visits",
+    "luxury_affinity_ratio",
+    "eco_engagement_flag",
+    "avg_adr",
+    "high_season_preference",
+    "domestic_guest"
+  ],
+  "score_range": [
+    0,
+    100
+  ],
+  "score_type": "uniform_continuous_percentile",
+  "top_10_pct_cutoff": 90.0,
+  "score_interpretation": "Score = percentile rank among all scoreable customers. Score 75 means this customer is better than 75% of the database. Score >= 90 = top 10%.",
+  "rfm_weights": {
+    "recency": 0.25,
+    "frequency": 0.35,
+    "monetary": 0.4
+  },
+  "bonus_weights": {
+    "loyalty": 0.12,
+    "engagement": 0.08,
+    "luxury_affinity": 0.05
+  },
+  "n_active_customers": 4602,
+  "top_10_pct_count": 460,
+  "score_mean": 50.0,
+  "score_std": 28.88,
+  "trained_on": "Hotel Booking Demand (Kaggle \u2014 jessemostipak)",
+  "generated_at": "2026-06-05T11:00:55.288991Z"
+}
