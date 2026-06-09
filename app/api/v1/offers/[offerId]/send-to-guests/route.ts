@@ -3,6 +3,7 @@ import { requireRevenueManager, actorLabel } from '@/lib/api/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { route, ok, notFound, badRequest, parseBody } from '@/lib/api/http';
 import { sendEmail, emailConfigured } from '@/lib/email/mailer';
+import { sendSms, smsConfigured, normalisePhone } from '@/lib/sms/sms';
 
 export const runtime = 'nodejs'; // Nodemailer needs the Node runtime
 export const maxDuration = 300;
@@ -11,21 +12,44 @@ type Ctx = { params: Promise<{ offerId: string }> };
 
 const bodySchema = z.object({
   customer_ids: z.array(z.uuid()).min(1, 'Select at least one guest').max(500),
-  confirm: z.boolean().optional(), // require true (and SendGrid) to actually email
+  confirm: z.boolean().optional(), // require true to actually email/text
 });
 
 /**
  * POST /api/v1/offers/:offerId/send-to-guests
- * Send a generated offer by email to a hand-picked set of guests (selected in the
+ * Send a generated offer to a hand-picked set of guests (selected in the
  * Filtering & Intelligence table). Revenue Manager (or Admin).
  *
- * Creates a tracked campaign, writes a personalised email per guest into
+ * Channel per guest:
+ *   - has a usable email  -> personalised HTML email (Gmail SMTP).
+ *   - no email but a phone -> SMS with the offer + website link (Twilio). Guests
+ *     with no email typically booked via an OTA, so SMS is the fallback reach.
+ *
+ * Creates a tracked campaign, writes one personalised message per guest into
  * campaign_audience, and dispatches. Safe by default: a DRY RUN (marks recipients
- * SENT, no external email) unless SENDGRID_API_KEY is set AND body has confirm:true.
+ * SENT, no external send) unless the relevant provider is configured AND the body
+ * has confirm:true.
  */
 
 const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+const JETWING_URL = 'https://www.jetwinghotels.com/';
+
+/** Short SMS for guests with no email (e.g. OTA bookings) — points them to the site. */
+function buildSms(
+  offer: { offer_title: string; discount_type: string | null; discount_value: number | null },
+  property: string,
+  firstName: string,
+) {
+  const discount =
+    offer.discount_type && offer.discount_value
+      ? offer.discount_type === 'Percentage'
+        ? ` (${offer.discount_value}% off)`
+        : ` (LKR ${offer.discount_value.toLocaleString()} value)`
+      : '';
+  return `Hi ${firstName || 'there'}, Jetwing has a special offer for you at ${property}: ${offer.offer_title}${discount}. Explore & book at ${JETWING_URL} — The Jetwing Symphony Team`;
+}
 
 function buildEmail(
   offer: {
@@ -89,15 +113,39 @@ export const POST = route<Ctx>(async (req, { params }) => {
   const propertyName =
     (Array.isArray(offer.properties) ? offer.properties[0] : offer.properties)?.property_name ?? 'Jetwing';
 
-  // 2. Selected guests that have an email address.
+  // 2. Selected guests + their contact details. Resolve a channel per guest:
+  //    usable email -> 'email';  no email but a phone -> 'sms';  else uncontactable.
   const { data: customers, error: custErr } = await admin
     .from('customers')
-    .select('customer_id, first_name, email')
+    .select('customer_id, first_name, email, phone, acquisition_channel')
     .in('customer_id', customer_ids)
     .is('deleted_at', null);
   if (custErr) throw new Error(custErr.message);
-  const recipients = (customers ?? []).filter((c) => !!c.email);
-  if (recipients.length === 0) throw badRequest('None of the selected guests have an email address.');
+
+  const hasUsableEmail = (e: string | null | undefined) => !!e && e.trim().includes('@');
+
+  type Recipient = {
+    customer_id: string;
+    first_name: string;
+    channel: 'email' | 'sms';
+    email: string | null;
+    phone: string | null; // normalised E.164
+  };
+  const recipients: Recipient[] = [];
+  for (const c of customers ?? []) {
+    if (hasUsableEmail(c.email)) {
+      recipients.push({ customer_id: c.customer_id, first_name: c.first_name, channel: 'email', email: c.email, phone: null });
+    } else {
+      const phone = normalisePhone(c.phone);
+      if (phone) {
+        recipients.push({ customer_id: c.customer_id, first_name: c.first_name, channel: 'sms', email: null, phone });
+      }
+      // else: no email and no usable phone -> uncontactable, skipped.
+    }
+  }
+  if (recipients.length === 0) {
+    throw badRequest('None of the selected guests have an email address or a phone number on file.');
+  }
 
   // Latest score snapshot per customer (best-effort; audience rows require it).
   const scoreByCustomer = new Map<string, { score: number; tier: string }>();
@@ -126,52 +174,85 @@ export const POST = route<Ctx>(async (req, { params }) => {
   if (campErr) throw new Error(campErr.message);
   const campaignId = campaign.campaign_id;
 
-  // 4. Audience rows with a personalised email each.
+  // 4. Audience rows — one personalised message per guest (email or SMS).
+  //    SMS bodies are stored in email_plain_body (prefixed [SMS]) for the audit trail.
+  const contactByCustomer = new Map(recipients.map((c) => [c.customer_id, c]));
   const audienceRows = recipients.map((c) => {
     const snap = scoreByCustomer.get(c.customer_id) ?? { score: 0, tier: 'Standard' };
-    const email = buildEmail(offer, propertyName, c.first_name);
+    if (c.channel === 'email') {
+      const email = buildEmail(offer, propertyName, c.first_name);
+      return {
+        campaign_id: campaignId,
+        customer_id: c.customer_id,
+        composite_score_snapshot: snap.score,
+        score_tier_snapshot: snap.tier,
+        email_subject: email.subject,
+        email_html_body: email.html,
+        email_plain_body: email.text,
+        send_status: 'PENDING' as const,
+      };
+    }
+    const sms = buildSms(offer, propertyName, c.first_name);
     return {
       campaign_id: campaignId,
       customer_id: c.customer_id,
       composite_score_snapshot: snap.score,
       score_tier_snapshot: snap.tier,
-      email_subject: email.subject,
-      email_html_body: email.html,
-      email_plain_body: email.text,
+      email_subject: `${offer.offer_title} (SMS)`,
+      email_html_body: null,
+      email_plain_body: `[SMS] ${sms}`,
       send_status: 'PENDING' as const,
     };
   });
   const { data: inserted, error: audErr } = await admin
     .from('campaign_audience')
     .insert(audienceRows)
-    .select('audience_id, customer_id, email_subject, email_html_body');
+    .select('audience_id, customer_id, email_subject, email_html_body, email_plain_body');
   if (audErr) throw new Error(audErr.message);
 
-  // 5. Dispatch (dry run unless SMTP configured AND confirm:true).
-  const live = emailConfigured() && confirm === true;
-  const emailByCustomer = new Map(recipients.map((c) => [c.customer_id, c.email as string]));
+  // 5. Dispatch. Dry run unless the relevant provider is configured AND confirm:true.
+  const liveEmail = emailConfigured() && confirm === true;
+  const liveSms = smsConfigured() && confirm === true;
 
-  let sent = 0;
+  let emailSent = 0;
+  let smsSent = 0;
   let failed = 0;
   let firstError: string | undefined;
+
   for (const r of inserted ?? []) {
-    const toEmail = emailByCustomer.get(r.customer_id);
+    const contact = contactByCustomer.get(r.customer_id);
     let messageId = `dryrun-${crypto.randomUUID()}`;
     let okSend = true;
 
-    if (live && toEmail) {
-      const res = await sendEmail({
-        to: toEmail,
-        subject: r.email_subject ?? 'A seasonal offer from Jetwing',
-        html: r.email_html_body ?? '',
-      });
-      okSend = res.ok;
-      if (res.messageId) messageId = res.messageId;
-      if (!res.ok && !firstError) {
-        firstError = res.error;
-        console.error(`[send-to-guests] email to ${toEmail} failed:`, res.error);
+    if (contact?.channel === 'sms' && contact.phone) {
+      if (liveSms) {
+        const res = await sendSms({ to: contact.phone, body: (r.email_plain_body ?? '').replace(/^\[SMS\]\s*/, '') });
+        okSend = res.ok;
+        if (res.sid) messageId = res.sid;
+        if (!res.ok && !firstError) {
+          firstError = res.error;
+          console.error(`[send-to-guests] SMS to ${contact.phone} failed:`, res.error);
+        }
       }
+      if (okSend) smsSent++;
+    } else if (contact?.channel === 'email' && contact.email) {
+      if (liveEmail) {
+        const res = await sendEmail({
+          to: contact.email,
+          subject: r.email_subject ?? 'A seasonal offer from Jetwing',
+          html: r.email_html_body ?? '',
+        });
+        okSend = res.ok;
+        if (res.messageId) messageId = res.messageId;
+        if (!res.ok && !firstError) {
+          firstError = res.error;
+          console.error(`[send-to-guests] email to ${contact.email} failed:`, res.error);
+        }
+      }
+      if (okSend) emailSent++;
     }
+
+    if (!okSend) failed++;
 
     await admin
       .from('campaign_audience')
@@ -181,23 +262,38 @@ export const POST = route<Ctx>(async (req, { params }) => {
           : { send_status: 'BOUNCED', bounced_at: new Date().toISOString() },
       )
       .eq('audience_id', r.audience_id);
-
-    if (okSend) sent++;
-    else failed++;
   }
 
+  const sent = emailSent + smsSent;
   await admin
     .from('campaigns')
-    .update({ emails_sent: sent, status: 'SENT', sent_at: new Date().toISOString() })
+    .update({ emails_sent: emailSent, status: 'SENT', sent_at: new Date().toISOString() })
     .eq('campaign_id', campaignId);
 
   const skipped = customer_ids.length - recipients.length;
+  const live = liveEmail || liveSms;
+  const parts: string[] = [];
+  if (emailSent) parts.push(`${emailSent} emailed`);
+  if (smsSent) parts.push(`${smsSent} texted (SMS)`);
+  const summary = parts.length ? parts.join(', ') : `${sent} contacted`;
+
   return ok({
-    data: { sent, failed, skipped_no_email: skipped, dry_run: !live, campaign_id: campaignId, audience_size: recipients.length },
+    data: {
+      sent,
+      email_sent: emailSent,
+      sms_sent: smsSent,
+      failed,
+      skipped_no_email: skipped, // skipped = no email AND no usable phone
+      dry_run: !live,
+      campaign_id: campaignId,
+      audience_size: recipients.length,
+    },
     message: live
-      ? `Offer emailed to ${sent} guest(s)${failed ? `, ${failed} failed${firstError ? `: ${firstError}` : ''}` : ''}.`
-      : emailConfigured()
-        ? `Dry run — ${sent} guest(s) marked sent. Confirm to send for real.`
-        : `Dry run — ${sent} marked sent (SMTP not configured: set SMTP_USER / SMTP_PASS).`,
+      ? `Offer sent — ${summary}${failed ? `, ${failed} failed${firstError ? `: ${firstError}` : ''}` : ''}.`
+      : `Dry run — ${summary} marked sent. ${
+          emailConfigured() || smsConfigured()
+            ? 'Confirm to send for real.'
+            : 'Configure SMTP (email) and/or Twilio (SMS) to send for real.'
+        }`,
   });
 });

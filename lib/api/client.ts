@@ -91,10 +91,20 @@ export const guestApi = {
     return api<Paginated<GuestListItem>>(`/customers?${qs.toString()}`);
   },
 
-  // Send a generated offer by email to a hand-picked set of guests.
+  // Send a generated offer to a hand-picked set of guests. Each guest is reached by
+  // email if they have one, otherwise by SMS if a phone number is on file (e.g. OTA bookings).
   sendOfferToGuests: (offerId: string, body: { customer_ids: string[]; confirm?: boolean }) =>
     api<{
-      data: { sent: number; failed: number; skipped_no_email: number; dry_run: boolean; campaign_id: string; audience_size: number };
+      data: {
+        sent: number;
+        email_sent: number;
+        sms_sent: number;
+        failed: number;
+        skipped_no_email: number; // skipped = no email AND no usable phone
+        dry_run: boolean;
+        campaign_id: string;
+        audience_size: number;
+      };
       message: string;
     }>(`/offers/${offerId}/send-to-guests`, { method: 'POST', body: JSON.stringify(body) }),
 
