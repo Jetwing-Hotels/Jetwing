@@ -15,6 +15,8 @@ export interface ExecutiveDashboard {
   };
   trends: { month: string; revpar: number; occupancy: number }[];
   properties: { name: string; revpar: number; occupancy: number; trend: 'up' | 'down' | 'neutral' }[];
+  // Full extent of available data (YYYY-MM), so the UI can bound/default the date pickers.
+  availableRange: { min: string; max: string } | null;
 }
 
 export interface GuestAnalytics {
