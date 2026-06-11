@@ -4,17 +4,17 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
+  // LayoutDashboard, // hidden with Executive Dashboard / Sustainability
   Users,
-  Leaf,
+  // Leaf,
   Settings,
   BarChart3,
   Search,
   Sparkles,
-  CloudSun,
-  Zap,
-  Droplets,
-  Trash2,
+  // CloudSun,
+  // Zap,
+  // Droplets,
+  // Trash2,
   // Bird,
   // FileBarChart,
   // ShieldAlert,
@@ -26,7 +26,8 @@ import {
 import { cn } from "@/lib/utils";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Executive Dashboard", href: "/" },
+  // Temporarily hidden from the sidebar (pages/files kept intact).
+  // { icon: LayoutDashboard, label: "Executive Dashboard", href: "/" },
   {
     id: "guests",
     icon: Users,
@@ -38,24 +39,25 @@ const menuItems = [
       { id: "recommendations", label: "Offer Recommendations", icon: Sparkles },
     ],
   },
-  {
-    id: "sustainability",
-    icon: Leaf,
-    label: "Sustainability",
-    href: "/sustainability",
-    submenu: [
-      { id: "overview", label: "Dashboard Overview", icon: LayoutDashboard },
-      { id: "climate", label: "Climate Action", icon: CloudSun },
-      { id: "energy", label: "Energy Management", icon: Zap },
-      { id: "water", label: "Water Management", icon: Droplets },
-      { id: "waste", label: "Waste Management", icon: Trash2 },
-      // { id: 'biodiversity', label: 'Biodiversity', icon: Bird },
-      { id: "community", label: "Community Impact", icon: Users },
-      // { id: 'esg', label: 'ESG Reports', icon: FileBarChart },
-      // { id: 'risk', label: 'Risk Management', icon: ShieldAlert },
-      // { id: 'goals', label: 'Sustainability Goals', icon: Target },
-    ],
-  },
+  // Temporarily hidden from the sidebar (pages/files kept intact).
+  // {
+  //   id: "sustainability",
+  //   icon: Leaf,
+  //   label: "Sustainability",
+  //   href: "/sustainability",
+  //   submenu: [
+  //     { id: "overview", label: "Dashboard Overview", icon: LayoutDashboard },
+  //     { id: "climate", label: "Climate Action", icon: CloudSun },
+  //     { id: "energy", label: "Energy Management", icon: Zap },
+  //     { id: "water", label: "Water Management", icon: Droplets },
+  //     { id: "waste", label: "Waste Management", icon: Trash2 },
+  //     // { id: 'biodiversity', label: 'Biodiversity', icon: Bird },
+  //     { id: "community", label: "Community Impact", icon: Users },
+  //     // { id: 'esg', label: 'ESG Reports', icon: FileBarChart },
+  //     // { id: 'risk', label: 'Risk Management', icon: ShieldAlert },
+  //     // { id: 'goals', label: 'Sustainability Goals', icon: Target },
+  //   ],
+  // },
 ];
 
 export function Sidebar() {

@@ -6,6 +6,10 @@ import type { ExecutiveDashboard } from '@/lib/dashboard/types';
  * GET /api/v1/dashboard/executive
  * Group-wide performance, aggregated from historical_revenue + properties.
  * Staff (ADMIN | REVENUE_MANAGER).
+ *
+ * Query (all optional):
+ *   property_id  — restrict to a single property (else group-wide)
+ *   from, to     — inclusive month range as "YYYY-MM" (data is monthly)
  */
 
 const MONTHS = ['', 'January', 'February', 'March', 'April', 'May', 'June',
@@ -31,19 +35,52 @@ const round = (n: number, d = 0) => {
 const pctChange = (cur: number, prev: number): number | null =>
   prev ? round(((cur - prev) / prev) * 100, 1) : null;
 
-export const GET = route(async () => {
+const ymToKey = (ym: string): number | null => {
+  const m = /^(\d{4})-(\d{1,2})$/.exec(ym.trim());
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  if (mo < 1 || mo > 12) return null;
+  return y * 12 + mo;
+};
+const keyToYm = (k: number): string => {
+  const y = Math.floor((k - 1) / 12);
+  const m = k - y * 12;
+  return `${y}-${String(m).padStart(2, '0')}`;
+};
+
+export const GET = route(async (req) => {
   const { supabase } = await requireStaff();
+  const { searchParams } = new URL(req.url);
+  const propertyId = searchParams.get('property_id');
+  const fromK = searchParams.get('from') ? ymToKey(searchParams.get('from')!) : null;
+  const toK = searchParams.get('to') ? ymToKey(searchParams.get('to')!) : null;
 
   const { data, error } = await supabase
     .from('historical_revenue')
     .select('property_id, year, month, total_revenue_lkr, occupancy_pct, revpar_lkr, repeat_guest_pct');
   if (error) throw new Error(error.message);
-  const rows = (data ?? []) as HRRow[];
+  const allRows = (data ?? []) as HRRow[];
 
   const { data: props } = await supabase.from('properties').select('property_id, property_name');
   const nameById = new Map((props ?? []).map((p) => [p.property_id, p.property_name]));
 
   const periodKey = (r: { year: number; month: number }) => r.year * 12 + r.month;
+
+  // Full extent of the data (before any range filter) — drives the date pickers.
+  const allKeys = allRows.map(periodKey);
+  const availableRange = allKeys.length
+    ? { min: keyToYm(Math.min(...allKeys)), max: keyToYm(Math.max(...allKeys)) }
+    : null;
+
+  // Apply property + month-range filters in code (small dataset).
+  const rows = allRows.filter((r) => {
+    if (propertyId && r.property_id !== propertyId) return false;
+    const k = periodKey(r);
+    if (fromK != null && k < fromK) return false;
+    if (toK != null && k > toK) return false;
+    return true;
+  });
 
   // ── Group by period (across all properties) ────────────────────────────────
   const byPeriod = new Map<number, HRRow[]>();
@@ -66,6 +103,7 @@ export const GET = route(async () => {
         occupancyPct: 0, occupancyChangePct: null, repeatGuestPct: 0, repeatChangePct: null,
       },
       trends: [], properties: [],
+      availableRange,
     };
     return ok({ data: empty });
   }
@@ -89,8 +127,8 @@ export const GET = route(async () => {
     repeatChangePct: pctChange(avg(latest.map((r) => r.repeat_guest_pct)), avg(prev.map((r) => r.repeat_guest_pct))),
   };
 
-  // ── Last 12 periods for the trend chart ────────────────────────────────────
-  const trends = periods.slice(-12).map((k) => {
+  // ── Trend chart: every period in the (filtered) range, capped for readability ─
+  const trends = periods.slice(-36).map((k) => {
     const grp = byPeriod.get(k)!;
     const y = Math.floor((k - 1) / 12);
     const m = k - y * 12;
@@ -127,6 +165,7 @@ export const GET = route(async () => {
     kpis,
     trends,
     properties,
+    availableRange,
   };
   return ok({ data: dashboard });
 });

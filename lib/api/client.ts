@@ -159,7 +159,12 @@ export const guestApi = {
     }>(`/offers/${offerId}/send-to-guests`, { method: 'POST', body: JSON.stringify(body) }),
 
   // ── Dashboards (aggregate analytics) ─────────────────────────────────────────
-  executiveDashboard: () => api<{ data: ExecutiveDashboard }>(`/dashboard/executive`),
+  executiveDashboard: (params: { from?: string; to?: string; property_id?: string } = {}) => {
+    const qs = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => v && qs.set(k, v));
+    const q = qs.toString();
+    return api<{ data: ExecutiveDashboard }>(`/dashboard/executive${q ? `?${q}` : ''}`);
+  },
   guestAnalytics: (params: { from?: string; to?: string } = {}) => {
     const qs = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => v && qs.set(k, v));

@@ -9,11 +9,13 @@ import {
   ArrowDownRight,
   Hotel,
   AlertTriangle,
+  Building2,
+  Calendar,
 } from 'lucide-react';
 import { StatCard } from '@/components/ui/StatCard';
 import { DashboardChart } from '@/components/charts/DashboardChart';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { guestApi, ApiClientError } from '@/lib/api/client';
+import { guestApi, ApiClientError, type PropertyOption } from '@/lib/api/client';
 import type { ExecutiveDashboard } from '@/lib/dashboard/types';
 
 const fmtLkr = (n: number) =>
@@ -27,10 +29,27 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Filters
+  const [properties, setProperties] = useState<PropertyOption[]>([]);
+  const [propertyId, setPropertyId] = useState<string>('all');
+  const [from, setFrom] = useState<string>(''); // "YYYY-MM-DD" (mapped to its month for the API)
+  const [to, setTo] = useState<string>('');
+
+  // Property list for the dropdown (once).
+  useEffect(() => {
+    guestApi.listProperties().then((r) => setProperties(r.data)).catch(() => {});
+  }, []);
+
+  // Fetch dashboard whenever a filter changes.
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
     guestApi
-      .executiveDashboard()
+      .executiveDashboard({
+        property_id: propertyId === 'all' ? undefined : propertyId,
+        from: from ? from.slice(0, 7) : undefined, // date → its month (data is monthly)
+        to: to ? to.slice(0, 7) : undefined,
+      })
       .then((res) => { if (!cancelled) { setData(res.data); setError(null); } })
       .catch((e) => {
         if (cancelled) return;
@@ -42,7 +61,18 @@ export default function Dashboard() {
       })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, []);
+  }, [propertyId, from, to]);
+
+  const range = data?.availableRange ?? null;
+  // Convert the month range (YYYY-MM) into full-date bounds for the date pickers.
+  const minDate = range ? `${range.min}-01` : undefined;
+  const maxDate = range
+    ? (() => {
+        const [y, m] = range.max.split('-').map(Number);
+        const lastDay = new Date(y, m, 0).getDate(); // day 0 of next month = last day
+        return `${range.max}-${String(lastDay).padStart(2, '0')}`;
+      })()
+    : undefined;
 
   return (
     <div className="space-y-8">
@@ -55,6 +85,62 @@ export default function Dashboard() {
               ? `Group-wide performance overview · ${data.period}`
               : 'Group-wide performance overview.'}
         </p>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-end gap-3 p-4 rounded-xl border bg-white" style={{ borderColor: '#E5E5E5' }}>
+        <label className="flex flex-col gap-1 text-xs font-semibold" style={{ color: '#666' }}>
+          <span className="flex items-center gap-1.5"><Building2 className="w-3.5 h-3.5" /> Property</span>
+          <select
+            value={propertyId}
+            onChange={(e) => setPropertyId(e.target.value)}
+            className="rounded-lg border px-3 py-2 text-sm font-normal outline-none focus:ring-2 focus:ring-[#8B9E23]/30 min-w-50"
+            style={{ borderColor: '#E5E5E5', color: '#1a1a1a' }}
+          >
+            <option value="all">All Properties</option>
+            {properties.map((p) => (
+              <option key={p.property_id} value={p.property_id}>{p.property_name}</option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-xs font-semibold" style={{ color: '#666' }}>
+          <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> From</span>
+          <input
+            type="date"
+            value={from}
+            min={minDate}
+            max={to || maxDate}
+            onChange={(e) => setFrom(e.target.value)}
+            className="rounded-lg border px-3 py-2 text-sm font-normal outline-none focus:ring-2 focus:ring-[#8B9E23]/30"
+            style={{ borderColor: '#E5E5E5', color: '#1a1a1a' }}
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs font-semibold" style={{ color: '#666' }}>
+          <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> To</span>
+          <input
+            type="date"
+            value={to}
+            min={from || minDate}
+            max={maxDate}
+            onChange={(e) => setTo(e.target.value)}
+            className="rounded-lg border px-3 py-2 text-sm font-normal outline-none focus:ring-2 focus:ring-[#8B9E23]/30"
+            style={{ borderColor: '#E5E5E5', color: '#1a1a1a' }}
+          />
+        </label>
+        {(propertyId !== 'all' || from || to) && (
+          <button
+            onClick={() => { setPropertyId('all'); setFrom(''); setTo(''); }}
+            className="rounded-lg border px-4 py-2 text-sm font-semibold hover:bg-slate-50 self-end"
+            style={{ borderColor: '#E5E5E5', color: '#666' }}
+          >
+            Reset
+          </button>
+        )}
+        {range && (
+          <span className="text-[11px] self-end ml-auto" style={{ color: '#999' }}>
+            Data available {minDate} → {maxDate} (monthly)
+          </span>
+        )}
       </div>
 
       {error && (

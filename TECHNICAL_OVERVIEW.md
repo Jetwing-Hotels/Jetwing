@@ -49,7 +49,129 @@ boundary where auth, validation, and secrets live.
 
 ---
 
-## 3. Tech stack & why each piece
+## 3. Full system architecture (complete reference)
+
+Section 2 is the mental model; this is the complete wiring of every subsystem — the diagram to
+keep open during a deep-dive.
+
+### 3.1 End-to-end component map
+
+```
+                                  ┌──────────────────────────────────────────────┐
+                                  │                 USER (browser)                │
+                                  └───────────────────────┬──────────────────────┘
+                                                          │ HTTPS (Supabase auth cookie)
+┌─────────────────────────────────────────────────────────▼─────────────────────────────────────────┐
+│ NEXT.JS APP (App Router · React 19 · TS · Tailwind 4)                                               │
+│                                                                                                     │
+│  middleware.ts ── verifies Supabase session on every request → redirects to /login if anonymous     │
+│                                                                                                     │
+│  CLIENT COMPONENTS ("use client")                 TYPED BROWSER CLIENTS (fetch wrappers)            │
+│   • /login (split-screen brand page)               • lib/api/client.ts        → /api/v1/*           │
+│   • /(dashboard) Executive Dashboard               • lib/guestScoring.ts       → /api/guests/score  │
+│   • Guest Intelligence:                            • lib/sustainability/api.ts → /api/sustainability │
+│       AnalyticsView · FilteringModule ·                                                             │
+│       OfferIntelligence                            Sidebar (responsive drawer) · TopNav             │
+│   • /sustainability (6 ESG views)                                                                   │
+└───────────────┬──────────────────────────────┬───────────────────────────────┬────────────────────┘
+                │ fetch() same-origin           │                               │
+┌───────────────▼──────────────────────────────▼───────────────────────────────▼────────────────────┐
+│ API LAYER — Next.js Route Handlers (the single trust boundary)                                      │
+│  Wrapper: route() → requireStaff()/requireRevenueManager()/requireAdmin() → Zod parseBody() → ok()  │
+│                                                                                                     │
+│  /api/v1 (RBAC, RLS-scoped or admin client)        /api/guests/score (HF proxy, Gradio queue+SSE)   │
+│   • admin/bootstrap · admin/roles                  /api/sustainability/* (admin client → views)     │
+│   • customers (+ /score /features /scores)          • properties · environment · waste-summary      │
+│   • offers  GET·POST(manual create)                 • community-programs · dashboard · kpis          │
+│       [offerId] GET·PATCH(edit)                     • esg-pillars · hotel-performance                │
+│       /approve /reject /activate /generate          • insights (→ Gemini) · news (→ NewsAPI)         │
+│       /send-to-guests  /runs                                                                         │
+│   • campaigns  GET·POST                            SERVER-ONLY LIBS                                  │
+│       [id] /build-audience /generate-emails         • lib/supabase/server.ts  (RLS client)          │
+│             /send /audience                         • lib/supabase/admin.ts   (service-role)         │
+│   • dashboard/executive · guests/analytics          • lib/email/mailer.ts     (Nodemailer/SMTP)     │
+│   • scoring/runs                                    • lib/sms/sms.ts          (Twilio REST)         │
+└──────┬───────────────────────┬───────────────────────┬──────────────┬──────────────┬───────────────┘
+       │ SQL (RLS / service)   │ functions.invoke()     │ HTTPS        │ SMTP         │ HTTPS
+┌──────▼───────────────┐ ┌─────▼──────────────────┐ ┌───▼─────────┐ ┌──▼────────┐ ┌───▼──────────────┐
+│ SUPABASE POSTGRES    │ │ SUPABASE EDGE FUNCTIONS │ │ HUGGINGFACE │ │  GMAIL    │ │ TWILIO · NEWSAPI │
+│ • tables + views     │ │ (Deno runtime)          │ │  GRADIO     │ │  SMTP     │ │ (SMS · ESG news) │
+│ • Row-Level Security │ │  • generate-offers      │ │  SPACE      │ └───────────┘ └──────────────────┘
+│ • Auth (sessions)    │ │  • generate-email       │ │ customer-   │
+│ • SQL functions/trig │ │  • generate-sustain…    │ │ ranker ML   │      ┌──────────────────────────┐
+└──────▲───────────────┘ │  shared _shared/gemini  │ │ /predict    │      │ GOOGLE GEMINI            │
+       │ writes          │  → model fallback chain ─┼─┼─────────────┘─────▶│ gemini-2.5-flash →       │
+       │                 └─────────────────────────┘ └─────────────┘      │ 2.0-flash → flash-latest │
+┌──────┴───────────────────────────────────┐                              └──────────────────────────┘
+│ PYTHON WORKER (Celery + Redis)            │
+│ nightly PMS ETL · feature refresh ·       │
+│ batch scoring → customer_scores           │
+└───────────────────────────────────────────┘
+```
+
+### 3.2 Component inventory
+
+| Subsystem | Entry point(s) | Talks to |
+|---|---|---|
+| **Auth / session** | `middleware.ts`, `lib/supabase/server.ts`, `lib/api/auth.ts` | Supabase Auth, `user_roles` |
+| **Guest list & filtering** | `FilteringModule.tsx` → `/api/v1/customers` | Postgres (RLS) |
+| **ML scoring** | `lib/guestScoring.ts` → `/api/guests/score` | HuggingFace Gradio Space |
+| **Offer engine** | `OfferIntelligence.tsx` → `/api/v1/offers*` | Postgres + `generate-offers` (Gemini) |
+| **Send to guests** | `/api/v1/offers/:id/send-to-guests` | `mailer.ts` (Gmail SMTP) + `sms.ts` (Twilio) |
+| **Campaigns** | `/api/v1/campaigns*` | Postgres + `generate-email` (Gemini) + SMTP |
+| **Dashboards** | `/api/v1/dashboard/executive`, `/api/v1/guests/analytics` | Postgres (server-side aggregation) |
+| **Sustainability** | `/sustainability` → `/api/sustainability/*` | Postgres views + `generate-sustainability-insights` (Gemini) + NewsAPI |
+| **Background jobs** | Python `worker/` | PMS, Postgres, HF model |
+
+### 3.3 Major data flows (one line each)
+
+1. **Auth:** browser → `middleware` verifies cookie → route handler `requireStaff()` reads `user_roles` → 401/403 or proceed.
+2. **Scoring:** `buildGuestVector()` (18 raw features) → `/api/guests/score` → Gradio queue (POST→event_id→SSE) → `{score, segment}` → tier badge.
+3. **Offer generation:** `/api/v1/offers/generate` → `generate-offers` edge fn → pull property+seasonal+5yr history → Gemini JSON (validate+retry+model-fallback) → insert `seasonal_offers` (PENDING_REVIEW).
+4. **Offer lifecycle:** PENDING_REVIEW → APPROVED → ACTIVE → EXPIRED; plus manual `POST /offers` (create) and `PATCH /offers/:id` (edit), all staff-gated.
+5. **Send to guests:** select guests → `/send-to-guests` → per guest: has email → SMTP; no email but phone → Twilio SMS (link to jetwinghotels.com) → tracked `campaign` + `campaign_audience`.
+6. **Campaign pipeline:** create campaign → build-audience (score-ranked) → generate-emails (Gemini, PII-minimal) → send (SMTP) → counters on `campaigns`.
+7. **Dashboards:** route handler reads `historical_revenue` / `customers` + `bookings` → aggregates in code (full-period-only) → JSON → Recharts.
+8. **Sustainability insights:** dashboard metrics + NewsAPI articles → `generate-sustainability-insights` (Gemini) → ESG recommendations, with deterministic fallback.
+9. **Background:** Celery (nightly) → PMS ETL → recompute `customer_features` → batch-score → write `customer_scores` + `scoring_runs`.
+
+### 3.4 External integrations
+
+| Service | Used for | Secret(s) | Failure handling |
+|---|---|---|---|
+| **Google Gemini** (Edge Fns) | Offers, emails, ESG insights | `GEMINI_API_KEY` (Supabase secret) | backoff + model fallback chain; JSON-repair retry |
+| **HuggingFace Gradio Space** | Guest scoring | `HF_API_TOKEN` (only if private) | per-row `null` isolation, 60s timeout |
+| **Gmail SMTP** (Nodemailer) | Offer/campaign email | `SMTP_USER` / `SMTP_PASS` | safe dry-run unless configured + confirm |
+| **Twilio** | SMS to no-email (OTA) guests | `TWILIO_*` | safe dry-run; E.164 normalisation |
+| **NewsAPI** | Sustainability news feed | `NEWS_API_KEY` | reachability filter; insights work without it |
+
+### 3.5 Repository / module map
+
+```
+app/
+  (dashboard)/          page.tsx (Executive) · guests/ · sustainability/ · layout.tsx (shell)
+  login/                branded split-screen sign-in (+ auto admin-bootstrap)
+  api/v1/               customers · offers · campaigns · dashboard · guests · scoring · admin
+  api/guests/score/     HuggingFace scoring proxy (Gradio queue + SSE)
+  api/sustainability/   properties · environment · waste-summary · community-programs ·
+                        dashboard · kpis · esg-pillars · hotel-performance · insights · news
+components/
+  Sidebar.tsx · TopNav.tsx
+  guests/               AnalyticsView · FilteringModule · OfferIntelligence
+  sustainability/       views/ (Overview · Environment · SocialGov) · data · exportReport
+lib/
+  api/ (client, auth, http) · supabase/ (server, admin, client) · email/mailer · sms/sms
+  guestScoring.ts · guests/ · dashboard/ · sustainability/
+supabase/
+  functions/            generate-offers · generate-email · generate-sustainability-insights ·
+                        _shared/ (gemini · offers · emails · insights · supabaseAdmin · deno-globals)
+  migrations/           001–010 versioned SQL
+worker/                 Python Celery + Redis (ETL · feature refresh · batch scoring)
+```
+
+---
+
+## 4. Tech stack & why each piece
 
 | Layer | Tech | Why |
 |---|---|---|
@@ -62,12 +184,13 @@ boundary where auth, validation, and secrets live.
 | **LLM** | Google Gemini (`gemini-2.5-flash`) via Edge Functions | Generates offers & personalized emails (originally Claude — ported). |
 | **ML model** | Hugging Face Gradio Space | Customer-ranking model (0-100 score) served as an API. |
 | **Email** | Nodemailer + Gmail SMTP | Sends offer/campaign emails from the API routes (Node runtime). Safe dry-run unless SMTP is configured. |
+| **SMS** | Twilio (REST) | Reaches no-email (OTA) guests; safe dry-run unless configured. |
 | **Background jobs** | Python, Celery, Redis | Nightly ETL + batch scoring outside the request cycle. |
 | **PDF export** | jsPDF + html2canvas | "Export Report" on the sustainability dashboard. |
 
 ---
 
-## 4. How a request actually works (end-to-end)
+## 5. How a request actually works (end-to-end)
 
 Trace one page load — this is great to narrate during a demo:
 
@@ -90,7 +213,7 @@ Two Supabase client types matter here (a good talking point):
 
 ---
 
-## 5. Security model — RBAC + Row-Level Security
+## 6. Security model — RBAC + Row-Level Security
 
 This is a strong portfolio talking point because it's "defense in depth":
 
@@ -103,7 +226,7 @@ This is a strong portfolio talking point because it's "defense in depth":
 
 ---
 
-## 6. The three "intelligence" pillars (the core of the project)
+## 7. The three "intelligence" pillars (the core of the project)
 
 ### A) Guest Scoring — Machine Learning
 - A model (`HiruniAyesha/jetwing-customer-ranker`) is deployed on **Hugging Face Spaces** as a
@@ -124,17 +247,19 @@ This is a strong portfolio talking point because it's "defense in depth":
 - For offers: the function pulls the property profile + **Sri Lanka seasonal context** +
   **5 years of historical revenue** for the target month, builds a structured prompt with a
   **strategic directive** (the user's business goal), and asks Gemini to return a JSON array of
-  2-3 grounded seasonal offers. A **validate + one-retry** loop guarantees clean JSON.
-- Offers go into a **review workflow** (PENDING_REVIEW -> APPROVED -> ACTIVE), surfaced in the
-  Offer Intelligence UI as tabs (**AI Recommendations**, **Approved Offers**, plus campaign
-  states). Approved/active offers can be **sent to guests in one click** — or turned into a
-  **campaign** with AI-personalized emails.
+  2-3 grounded seasonal offers. A **validate + one-retry** loop guarantees clean JSON, and a
+  **model-fallback chain** (2.5-flash → 2.0-flash → flash-latest) rides through overload spikes.
+- Offers go into a **review workflow** (PENDING_REVIEW -> APPROVED -> ACTIVE -> EXPIRED), surfaced
+  in the Offer Intelligence UI as tabs (**AI Recommendations**, **Approved Offers**, **Completed**
+  for expired/invalid, plus campaign states). Staff can also **create offers manually** (`POST`)
+  and **edit** any offer (`PATCH`) in-app. Approved/active offers can be **sent to guests in one
+  click** — or turned into a **campaign** with AI-personalized emails.
 - **Two send paths, one pipeline:** (1) hand-pick guests in **Filtering & Intelligence** and
-  *Send Offer*, or (2) *Send to guests* on an **Approved Offer** (sends to every guest with an
-  email on file). Both reuse `POST /api/v1/offers/:id/send-to-guests`, which spins up a tracked
-  campaign, writes a **personalized HTML+text email per guest** (branded, with a
-  **call-to-action link to jetwinghotels.com**), and dispatches via Gmail SMTP. It reports
-  `sent / failed / skipped (no email)` and surfaces the real SMTP error on failure.
+  *Send Offer*, or (2) *Send to guests* on an **Approved Offer**. Both reuse
+  `POST /api/v1/offers/:id/send-to-guests`, which spins up a tracked campaign, writes a
+  **personalized message per guest** (branded email with a **link to jetwinghotels.com**, or an
+  **SMS** for guests with no email), and dispatches via Gmail SMTP / Twilio. It reports
+  `email_sent / sms_sent / failed / skipped` and surfaces the real provider error on failure.
 - *Talking point:* the LLM client sits behind a shared interface, so swapping providers
   (we migrated **Claude -> Gemini**) only touched one file — the prompt-building and validation
   logic is provider-agnostic.
@@ -152,7 +277,7 @@ This is a strong portfolio talking point because it's "defense in depth":
 
 ---
 
-## 7. Sustainability Dashboard — ESG reporting & AI insights
+## 8. Sustainability Dashboard — ESG reporting & AI insights
 
 A full **ESG (Environmental, Social, Governance) reporting module** for the hotel group, served
 at `/sustainability`. It's a distinct domain from Guest Intelligence but rides the *same*
@@ -195,7 +320,7 @@ useful for board/ESG reporting.
 
 ---
 
-## 8. Background processing (Python worker)
+## 9. Background processing (Python worker)
 Not everything fits in a web request. A separate **Python service** uses **Celery + Redis** to run:
 - **Nightly PMS ETL** — pull bookings from the Property Management System into the DB.
 - **Feature refresh** — recompute the 18-feature `customer_features` via a DB function.
@@ -207,7 +332,7 @@ belongs in a queue, not the request path.
 
 ---
 
-## 9. Data model (the domains)
+## 10. Data model (the domains)
 ~15 tables across four domains:
 - **Core:** `properties`, `customers`, `bookings`
 - **Intelligence:** `customer_features`, `customer_scores`, `scoring_runs`
@@ -221,36 +346,37 @@ Schema is managed as **versioned SQL migrations** — migration `010` extends `b
 
 ---
 
-## 10. Engineering decisions worth highlighting (great for Q&A)
+## 11. Engineering decisions worth highlighting (great for Q&A)
 - **Single trust boundary:** browser -> API -> {DB, AI}. Secrets (service-role key, Gemini key)
   live only on the server / as Supabase secrets, never in the client bundle.
 - **Provider-agnostic AI layer:** migrated the LLM from Claude to Gemini by changing one shared
-  module; the prompt logic didn't move.
-- **Safe-by-default email sending:** sends run as a **dry run** (marked sent, no real email)
-  unless **SMTP is configured** (`SMTP_USER`/`SMTP_PASS` — a Gmail app password) *and* the
-  caller confirms — prevents accidentally emailing real addresses from a demo. An optional
-  `EMAIL_OVERRIDE_TO` funnels every message to one inbox for testing. Nodemailer is a Node-only
-  dependency, so the send routes pin `runtime = 'nodejs'` and it's excluded from the bundler via
-  `serverExternalPackages`.
+  module; the prompt logic didn't move. The Gemini client adds **backoff + a model-fallback chain**
+  so transient overloads don't fail generation.
+- **Safe-by-default messaging:** email **and** SMS sends run as a **dry run** (marked sent, no real
+  message) unless the provider is configured (`SMTP_*` / `TWILIO_*`) *and* the caller confirms —
+  prevents accidentally contacting real guests from a demo. `EMAIL_OVERRIDE_TO` / `SMS_OVERRIDE_TO`
+  funnel everything to one inbox/phone for testing. Nodemailer is Node-only, so send routes pin
+  `runtime = 'nodejs'` and it's excluded from the bundler via `serverExternalPackages`.
 - **Resilience:** the scoring proxy isolates a bad/slow record instead of failing the whole
-  batch; the LLM has a JSON-repair retry; aggregations handle incomplete data; the sustainability
-  insights panel falls back to deterministic rule-based recommendations if Gemini is unavailable.
+  batch; the LLM has a JSON-repair retry + model fallback; aggregations handle incomplete data;
+  the sustainability insights panel falls back to deterministic rule-based recommendations if
+  Gemini is unavailable.
 - **Type safety end to end:** Zod validates API inputs; generated TypeScript types mirror the DB
   schema; shared response types are imported by both the API and the UI.
 
 ---
 
-## 11. Suggested demo flow (so the story lands)
+## 12. Suggested demo flow (so the story lands)
 1. **Log in** -> land on the **Executive Dashboard** (real KPIs from the DB).
 2. **Guest Intelligence -> Filtering** -> show real guests, multi-select filters, **date range**,
    and the **ML Score column**.
 3. **Select guests -> Send Offer** -> connect the filter to the marketing pipeline.
 4. **Offer Recommendations -> Generate** -> live **Gemini** generation of seasonal offers from a
    business goal -> **Approve** -> the offer appears under the **Approved Offers** tab.
-5. **Approved Offers -> Send** -> one-click email of the offer to guests (branded email with a
-   link to jetwinghotels.com), with live `sent / failed / skipped` feedback.
+5. **Approved Offers -> Send** -> one-click email/SMS of the offer to guests (branded email with a
+   link to jetwinghotels.com; SMS for OTA guests), with live `sent / failed / skipped` feedback.
 6. **Guest Analytics** -> flip the **date range** and watch every chart re-aggregate.
-7. **Sustainability** -> ESG dashboards + **PDF export**.
+7. **Sustainability** -> ESG dashboards + AI insights + **PDF export**.
 8. **Resize to a phone** -> the sidebar collapses into a slide-in drawer (hamburger toggle),
    showing the UI is fully responsive.
 
@@ -258,11 +384,11 @@ Schema is managed as **versioned SQL migrations** — migration `010` extends `b
 
 ## Honest framing for Q&A
 If asked "is this production-ready?": it's a **portfolio-grade build on real architecture** —
-real DB with RLS, real ML inference, real LLM generation, and **real email delivery via Gmail
-SMTP** — running on **demo/seed data**. Email defaults to a safe dry-run and only sends for real
-once SMTP credentials are configured and the caller confirms; the ML model is on a free-tier HF
-Space. The architecture is production-shaped; the data and external integrations are
-demo-configured.
+real DB with RLS, real ML inference, real LLM generation, and **real email/SMS delivery (Gmail
+SMTP + Twilio)** — running on **demo/seed data**. Messaging defaults to a safe dry-run and only
+sends for real once provider credentials are configured and the caller confirms; the ML model is
+on a free-tier HF Space. The architecture is production-shaped; the data and external integrations
+are demo-configured.
 
 ---
 
@@ -272,6 +398,6 @@ demo-configured.
 - **Database/Auth:** Supabase (PostgreSQL, Row-Level Security, Auth, Edge Functions)
 - **AI/ML:** Google Gemini (Edge Functions, Deno) + Hugging Face Gradio Space (Python ML)
 - **Sustainability:** Gemini insights (Edge Function) + NewsAPI live feed, monthly ESG Postgres views
-- **Email:** Nodemailer + Gmail SMTP (Node runtime, safe dry-run by default)
+- **Messaging:** Nodemailer + Gmail SMTP (email) · Twilio (SMS) — both safe dry-run by default
 - **Background:** Python, Celery, Redis, gradio_client
 - **Other:** jsPDF + html2canvas (PDF export), server-only (server/client boundary)
